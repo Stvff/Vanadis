@@ -1,0 +1,11 @@
+set form, 1
+set gr1, 30 000 000
+push time
+rmr jr
+	inc ir
+	cmp ir, gr1
+	Cs rjmp jr
+nprint ir
+sub $0, time
+mul $0, 1-
+nprint $0

@@ -1,0 +1,8 @@
+sprint "hellorld"
+set gr1, 22 + 33 | l
+rmr jr
+	nprint ir
+	inc ir
+	cmp ir, 10
+	Cs rjmp jr
+;print gr1

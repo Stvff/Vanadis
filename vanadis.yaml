@@ -1,0 +1,49 @@
+filetype: Vanadis
+
+detect:
+    filename: "\\.(vin|vco|van)$"
+
+rules:
+    # This file is made for Arbitrary Assembly, it is adapted from the NASM assembly file from micro itself
+
+    ## Instructions
+    ## aasm
+    - statement: "([>])"
+    ## stdlib
+    - statement: "\\b(?i)(set|dset|len|rot|shf|rev)(?-i)\\b"
+    - statement: "\\b(?i)(app|sel|cut|ins)(?-i)\\b"
+    - statement: "\\b(?i)(inc|dec|add|sub|rsub|mul|div|mod)(?-i)\\b"
+    - statement: "\\b(?i)(print|nprint|sprint|input|sinput|fread|fwrite|flen)(?-i)\\b"
+    - statement: "\\b(?i)(cmp|Ce|Cn|Cg|Cs)(?-i)\\b"
+    - statement: "\\b(?i)(jmp|rjmp|rmr)(?-i)\\b"
+    - statement: "\\b(?i)(push|pop|peek|flip|unf)(?-i)\\b"
+    - statement: "\\b(?i)(cton|ntoc|ston|ntos)(?-i)\\b"
+    - statement: "\\b(?i)(run|prun|rand)(?-i)\\b"
+    - symbol.operator: "[,+|lLuUsSnN]"
+
+      ## Registers
+    - identifier: "\\b(?i)(gr1|gr2|gr3|gr4|gr5|gr6|ir|jr|ans)(?-i)\\b"
+    - identifier: "\\b(?i)(staptr|cdxptr|offset|time)(?-i)\\b"
+    - identifier: "\\b(?i)(form|flag|loop)(?-i)\\b"
+
+      ## Constants
+      # Number - it works
+    - constant.number: "\\b[0-9 ijk]+\\b"
+    - constant.number: "[-]"
+    - constant.number: ":+[a-z A-Z 0-9]+\\b"
+    - identifier: "[$]"
+
+      ## Other
+
+    - constant.string:
+        start: "\""
+        end: "\""
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\."
+
+    - comment:
+        start: "(;|#)"
+        end: "$"
+        rules:
+            - todo: "(TODO|XXX|FIXME|rst|mst|--|[)]|[(]):?"
