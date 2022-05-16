@@ -377,11 +377,14 @@ nry_t* exec(int ins, nry_t** args, bool* doprint){
 }
 
 // ######################################################################################## filing
+#define labelSize 20
 
 typedef struct FILEstuff {
 	uint64_t len;
 	uint64_t pos;
 	char* mfp;
+	uint64_t* labelposs;
+	char (*labels)[labelSize];
 } file_t;
 
 char* mfgets(char* string, int size, file_t* file){
@@ -414,23 +417,70 @@ file_t* mfopen(char* path, file_t* file){
 	file->pos = 0;
 
 	fclose(fp);
+
+	file->labels = NULL;
+	file->labelposs = NULL;
+	int labelAm = 0;
+	char buf[userInputLen];
+	while(mfgets(buf, labelSize, file) != NULL){
+		int i = 0;
+		int j = 0;
+		bool look = false;
+		while(buf[i] != '\0' && i < userInputLen){
+			if(buf[i] != ':' && EndLine(&buf[i])) break;
+//			printf("%c, %d, %d\n", buf[i], i, look);
+			if(look) {
+				if(IsSpace(&buf[i])) break;
+				if(j+2 >= labelSize) break;
+				file->labels[labelAm - 1][j] = buf[i];
+				file->labels[labelAm - 1][++j] = '\0';
+//				printf("%c", buf[i]);
+			} else if(buf[i] != ':' && !IsSpace(&buf[i])) break;
+			if(buf[i] == ':'){
+				look = true;
+				labelAm++;
+				file->labels = realloc(file->labels, sizeof(char[labelAm][labelSize]));
+				file->labelposs = realloc(file->labelposs, sizeof(uint64_t[labelAm]));
+				file->labelposs[labelAm - 1] = file->pos;
+//				printf("\n");
+			}
+			i++;
+		}
+//		printf("------------------------------------\n");
+	}
+	file->labels = realloc(file->labels, sizeof(char[labelAm + 1][labelSize]));
+	file->labels[labelAm][0] = '\0';
+
+	file->pos = 0;
 	return file;
 }
 
 void mfclose(file_t* file){
 	free(file->mfp);
+	free(file->labelposs);
+	free(file->labels);
 	file->mfp = NULL;
+	file->labelposs = NULL;
+	file->labels = NULL;
 	file->pos = 0;
 	file->len = 0;
 }
 
 void filerelexec(int ins, nry_t** args, file_t* file){
+	int dummy;
 	switch(ins){
 		case rmr*4 ... rmr*4 + 3: inttonry(args[0], file->pos, ins%4); break;
 		case rjmp*4: case rjmp*4 + 2: file->pos = UN args[0]->fst; goto truerjmp;
 		case rjmp*4 + 1: case rjmp*4 + 3: file->pos = UL args[0]->fst; goto truerjmp;
 			truerjmp:
 			inttonry(args[1], file->pos, ins%4);
+			break;
+		case jmp*4 ... jmp*4 + 3:
+			dummy = 0;
+			dummy = strlook((char*)args[0]->fst, labelSize, file->labels, &dummy);
+			if(dummy == -1){ printf("\aLabel '%s' does not exist.\n", args[1]->fst); break;}
+			inttonry(args[1], file->pos, ins%4);
+			file->pos = file->labelposs[dummy];
 			break;
 	}
 }

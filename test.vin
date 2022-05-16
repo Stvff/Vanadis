@@ -5,4 +5,12 @@ rmr jr
 	inc ir
 	cmp ir, 10
 	Cs rjmp jr
-;print gr1
+print gr1
+set ir, 0
+:label
+	nprint ir
+	inc ir
+	cmp ir, 10
+	Cs jmp "label"
+	:anoth
+print 443 + 445 | l
