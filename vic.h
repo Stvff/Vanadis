@@ -6,6 +6,8 @@
 #define maxKeywordLen 16
 #define argumentAmount 4
 
+char* UserInput;
+
 int strlook(char string[], int thewordlen, char source[][thewordlen], int* readhead){
 	int item = 0;
 	int j;
@@ -46,12 +48,13 @@ enum registerEnum {
 char instructionString[][maxKeywordLen] = {
 	"set", "dset", "iget", "iset",
 	"inc", "dec", "add", "sub", "mul", "div", "mod",
-	"app", "rot", "shf", "rev", "sel", "cut", "ins",
+	"app", "rot", "shf", "rshf", "rev", "sel", "cut", "ins",
 	"ptra", "ptrs", "ptr", "len", "fst",
-	"push", "pop", "flip", "unf",
+	"push", "pop", "peek", "flip", "unf",
 	"cmp", "equ", "Ce", "Cs", "Cg", "Cn",
+	"ninput", "sinput",
 	"fread", "fwrite", "flen",
-	"rmr", "jmp", "rjmp",
+	"rmr", "jmp", "run", "prun", "rjmp",
 	"print", "nprint", "sprint",
 	"\\", "\0end"
 };
@@ -59,12 +62,13 @@ char instructionString[][maxKeywordLen] = {
 enum instructionEnum {
 	set, dset, iget, iset,
 	inc, dec, add, sub, mul, divi, modu,
-	app, rot, shf, rev, sel, cut, ins,
+	app, rot, shf, rshf, rev, sel, cut, ins,
 	ptra, ptrs, ptr, len, fstF,
-	push, pop, flip, unf,
+	push, pop, peek, flip, unf,
 	cmp, equ, Ce, Cs, Cg, Cn,
+	ninput, sinput,
 	firead, fiwrite, flen,
-	rmr, jmp, rjmp,
+	rmr, jmp, run, prun, rjmp,
 	print, nprint, sprint,
 	endprog
 };
@@ -184,6 +188,12 @@ nry_t* exec(int ins, nry_t** args, bool* doprint){
 		case iget*4 + 2: UN args[0]->fst = UN (args[1]->base + (UN args[2]->fst)%args[1]->len); break; // u
 		case iget*4 + 3: UL args[0]->fst = UL (args[1]->base + (UL args[2]->fst)%args[1]->len); break; // u l
 
+// iset
+		case iset*4:     SN (args[0]->base + (UN args[2]->fst)%args[0]->len) = SN args[1]->fst; break;
+		case iset*4 + 1: SL (args[0]->base + (UL args[2]->fst)%args[0]->len) = SL args[1]->fst; break;
+		case iset*4 + 2: UN (args[0]->base + (UN args[2]->fst)%args[0]->len) = UN args[1]->fst; break;
+		case iset*4 + 3: UL (args[0]->base + (UL args[2]->fst)%args[0]->len) = UL args[1]->fst; break;
+
 // inc
 		case inc*4:     SN args[0]->fst += 1; break;
 		case inc*4 + 1: SL args[0]->fst += 1; break; // l
@@ -234,6 +244,12 @@ nry_t* exec(int ins, nry_t** args, bool* doprint){
 		case shf*4 + 1: shiftnry(args[0], SL args[1]->fst, ins%4); break;
 		case shf*4 + 2: shiftnry(args[0], UN args[1]->fst, ins%4); break;
 		case shf*4 + 3: shiftnry(args[0], UL args[1]->fst, ins%4); break;
+// rshf
+		case rshf*4:     rshiftnry(args[0], SN args[1]->fst, ins%4); break;
+		case rshf*4 + 1: rshiftnry(args[0], SL args[1]->fst, ins%4); break;
+		case rshf*4 + 2: rshiftnry(args[0], UN args[1]->fst, ins%4); break;
+		case rshf*4 + 3: rshiftnry(args[0], UL args[1]->fst, ins%4); break;
+
 // rev
 // sel
 		case sel*4:     cutnry(args[0], args[1], SN args[2]->fst, (SN args[2]->fst) + (SN args[0]->fst)); break;
@@ -276,6 +292,9 @@ nry_t* exec(int ins, nry_t** args, bool* doprint){
 		case push*4 ... push*4 + 3: *doprint &= pushtost(args[0]); break;
 // pop
 		case pop*4 ... pop*4 + 3: *doprint &= popfromst(args[0]); break;
+// peek
+		case peek*4 ... peek*4 + 3: if(stackPtr == 0){ printf("\aThere are no elements on the stack\n"); *doprint = false; break;}
+			copynry(args[0], stack[stackPtr]); break;
 // flip
 		case flip*4:     dummy = (uint64_t) SN args[0]->fst; goto trueflip;
 		case flip*4 + 1: dummy = (uint64_t) SL args[0]->fst; goto trueflip;
@@ -323,6 +342,20 @@ nry_t* exec(int ins, nry_t** args, bool* doprint){
 		case equ*4 ... equ*4 + 3:
 			if(equalnry(args[0], args[1])) SN regs[flag].base = 0;
 			else SN regs[flag].base = 3; ;retptr = &regs[flag]; break;
+
+// ninput
+		case ninput*4 ... ninput*4 + 3: if(UN args[2]->fst == 0){
+			fgets(UserInput, userInputLen, stdin);
+			inttonry(args[0], inputtoint(UserInput, 0, (int*)&dummy, ins%4 < 2), ins%4);} else
+			inttonry(args[0], inputtoint((char*) args[1]->fst, 0, (int*)&dummy, ins%4 < 2), ins%4);
+			break;
+
+// sinput
+		case sinput*4 ... sinput*4 + 3:dummy = 0; if(UN args[2]->fst == 0){
+			fgets(UserInput, userInputLen, stdin);
+			strtonry(args[0], UserInput, (int*)&dummy);} else
+			strtonry(args[0], (char*) args[1]->fst, (int*)&dummy);
+			break;
 
 // print
 		case print*4 ... print*4 + 3:
@@ -379,10 +412,16 @@ nry_t* exec(int ins, nry_t** args, bool* doprint){
 // ######################################################################################## filing
 #define labelSize 20
 
+typedef struct PREVfil {
+	int fileNr;
+	uint64_t prevfile;
+} prev_t;
+
 typedef struct FILEstuff {
 	uint64_t len;
 	uint64_t pos;
 	char* mfp;
+	prev_t prev;
 	uint64_t* labelposs;
 	char (*labels)[labelSize];
 } file_t;

@@ -69,7 +69,7 @@ nry_t* copynry(nry_t* des, nry_t* src){
 }
 
 nry_t* appendnry(nry_t* des, nry_t* src){
-	uint64_t off = src->fst - src->base;
+	uint64_t off = des->fst - des->base;
 	des->base = realloc(des->base, des->len + src->len + 8);
 	des->fst = des->base + off;
 	memcpy(des->base + des->len, src->base, src->len);
@@ -210,10 +210,31 @@ bool equalnry(nry_t* a, nry_t* b){
 	return true;
 }
 
+nry_t* rshiftnry(nry_t* des, uint64_t shift, int form){
+	if(shift == 0) return des;
+	uint64_t off = des->fst - des->base;
+	if(form < 2 && (int64_t) shift < 0) goto shiftdown;
+
+	des->base = realloc(des->base, des->len + shift + 8);
+	memset(des->base + des->len, 0, shift + 8);
+	des->len += shift;
+	des->fst = des->base + off;
+	return des;
+
+	shiftdown:
+	shift *= -1;
+	if(shift >= des->len){ freenry(des); makenry(des, 0); return des;}
+	des->len -= shift;
+	des->base = realloc(des->base, des->len + 8);
+	memset(des->base + des->len, 0, 8);
+	des->fst = des->base + off%des->len;
+	return des;
+}
+
 nry_t* shiftnry(nry_t* des, uint64_t shift, int form){
 	if(shift == 0) return des;
 	uint64_t off = des->fst - des->base;
-	if(form < 2) if((int64_t) shift < 0) goto shiftdown;
+	if(form < 2 && (int64_t) shift < 0) goto shiftdown;
 
 	des->base = realloc(des->base, des->len + shift + 8);
 	memmove(des->base + shift, des->base, des->len);

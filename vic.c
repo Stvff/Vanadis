@@ -18,9 +18,8 @@ bool dothing(char* userInput, file_t* file, char* mode){
 	int readhead = 0;
 	int p = 0;
 	while(userInput[p] != '|' && !EndLine(&userInput[p])){
-		if(IsSpace(&userInput[p])){
-			if(insNr == -1) break;
-		} else if(insNr == -1 || insNr == -2){
+		if(insNr == -1) break;
+		if(!IsSpace(&userInput[p]) && insNr == -2){
 			insNr = strlook(userInput, maxKeywordLen, instructionString, &p);
 //			printf("instr: %d\n", insNr);
 			readhead = p + 1;
@@ -165,7 +164,7 @@ bool getinput(char* userInput, file_t* file, char* mode){
 }
 
 int main(int argc, char** argv){
-	char* userInput = malloc(sizeof(char[userInputLen + userInputLen]));
+	UserInput = malloc(sizeof(char[userInputLen + userInputLen]));
 	for(int i = 0; i < regAmount; i++){
 		makenry(&regs[i], 8);
 		memset(regs[i].base, 0, 8);
@@ -182,9 +181,9 @@ int main(int argc, char** argv){
 	}
 
 	while(running){
-		if(!getinput(userInput, &file, &mode)) break;
+		if(!getinput(UserInput, &file, &mode)) break;
 //		printf("userInput: %s", userInput);
-		if(!dothing(userInput, &file, &mode)) break;;
+		if(!dothing(UserInput, &file, &mode)) break;;
 	}
 
 	if(mode == 'f'){
@@ -192,6 +191,6 @@ int main(int argc, char** argv){
 	}
 	freemac();
 	for(int i = 0; i < regAmount; i++) freenry(&regs[i]);
-	free(userInput);
+	free(UserInput);
 	return 0;
 }
