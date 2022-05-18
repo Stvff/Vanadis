@@ -1,7 +1,7 @@
-#include "vic.h"
-#include <time.h>
+#include "interpreter.h"
+#include "compiler.h"
 
-bool dothing(char* userInput, file_t* file, char* mode){
+bool interpret(char* userInput, file_t* file, char* mode){
 	nry_t* args[argumentAmount];
 	nry_t temps[argumentAmount];
 	bool stackref[argumentAmount];
@@ -59,7 +59,7 @@ bool dothing(char* userInput, file_t* file, char* mode){
 	uint64_t dig = 0;
 	uint64_t inc = 1 + 7*(form%2);
 	while(userInput[readhead] != '|' && !EndLine(&userInput[readhead])){
-//numbers
+/* numbers */
 		if(IsNr(&userInput[readhead])){
 			dig = inputtoint(userInput, readhead, &readhead, true);
 //			printf("dig: %lu\n", dig);
@@ -70,7 +70,7 @@ bool dothing(char* userInput, file_t* file, char* mode){
 				case 3: UL (args[argNr]->base + digNr) = (uint64_t) dig; break;
 			}
 		}
-// registers
+/* registers */
 		if(IsAlph(&userInput[readhead])){
 			regNr = strlook(userInput, maxKeywordLen, registerString, &readhead);
 //			printf("entry: %c, register: %d\n", userInput[readhead], regNr);
@@ -86,17 +86,17 @@ bool dothing(char* userInput, file_t* file, char* mode){
 				goto endsafe;
 			}
 		}
-// strings
+/* strings */
 		if(userInput[readhead] == '"'){
 //			printf("string, r: %d\n", readhead);
 			readhead++;
 			strtonry(args[argNr], userInput, &readhead);
 		}
-// fst
+/* fst */
 		if(userInput[readhead] == '\'') args[argNr]->fst = args[argNr]->base + digNr;
-// args
+/* args */
 		if(userInput[readhead] == ','){argNr++; digNr = 0;}
-// digs
+/* digs */
 		if(userInput[readhead] == '+') digNr += inc;
 		readhead++;
 //		printf("readhead: %d, entry: %c\n", readhead, userInput[readhead]);
@@ -165,10 +165,6 @@ bool getinput(char* userInput, file_t* file, char* mode){
 
 int main(int argc, char** argv){
 	UserInput = malloc(sizeof(char[userInputLen + userInputLen]));
-	for(int i = 0; i < regAmount; i++){
-		makenry(&regs[i], 8);
-		memset(regs[i].base, 0, 8);
-	}
 	bool running = true;
 	char mode = 't';
 	if(!initmac()) return -1;
@@ -190,14 +186,13 @@ int main(int argc, char** argv){
 	while(running){
 		if(!getinput(UserInput, &file, &mode)) break;
 //		printf("userInput: %s", userInput);
-		if(!dothing(UserInput, &file, &mode)) break;;
+		if(!interpret(UserInput, &file, &mode)) break;;
 	}
 
 	if(mode == 'f'){
 		mfclose(&file);
 	}
 	freemac();
-	for(int i = 0; i < regAmount; i++) freenry(&regs[i]);
 	free(UserInput);
 	return 0;
 }

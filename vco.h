@@ -1,5 +1,5 @@
-#ifndef NUMBERARRAY_H
-#define NUMBERARRAY_H
+#ifndef VCO_H
+#define VCO_H
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -27,6 +27,7 @@ bool IsSpace(char* entry){
 	return *entry == ' ' || *entry == '\t';
 }
 
+// ######################################################################################## nry stuff
 typedef struct ARRAy {
 	uint8_t* base;
 	uint64_t len;
@@ -270,6 +271,131 @@ nry_t* cutnry(nry_t* des, nry_t* src, uint64_t start, uint64_t end){
 		freenry(ptr);
 	}
 	return des;
+}
+
+// ######################################################################################## machine functions
+#define userInputLen 256
+#define maxKeywordLen 16
+#define argumentAmount 4
+
+char* UserInput;
+
+char registerString[][maxKeywordLen] = {
+	"gr1", "gr2", "gr3", "gr4", "gr5", "gr6",
+	"ir", "jr", "ans",
+	"offset", "form", "flag",
+	"stkptr", "cdxptr",
+	"time",
+	"\0end"
+};
+
+enum registerEnum {
+	gr1, gr2, gr3, gr4, gr5, gr6,
+	ir, jr, ans,
+	offset, formr, flag,
+	stkptr, cdxptr, tme,
+	regAmount
+};
+
+nry_t** stack;
+nry_t** codex;
+int64_t stackPtr;
+int64_t codexPtr;
+nry_t regs[regAmount];
+
+bool pushtost(nry_t* src){
+	stackPtr++;
+	stack = realloc(stack, sizeof(nry_t*[stackPtr + 1]));
+	if(stack == NULL){
+		printf("\aFatal stack reallocation error on push.\n");
+		return false;
+	}
+	stack[stackPtr] = malloc(sizeof(nry_t));
+	makeimnry(stack[stackPtr], src);
+	return true;
+}
+
+bool popfromst(nry_t* des){
+	if(stackPtr < 0){
+		printf("\aThere are no elements on the stack to pop.\n");
+		return false;
+	}
+	copynry(des, stack[stackPtr]);
+	freenry(stack[stackPtr]);
+	free(stack[stackPtr]);
+	stack = realloc(stack, sizeof(nry_t*[stackPtr]));
+	stackPtr--;
+	return true;
+}
+
+bool Flip(){
+	if(stackPtr <= -1){
+		printf("\aThere are no elements on the stack to flip.\n");
+		return false;
+	}
+
+	codexPtr++;
+	codex = realloc(codex, sizeof(nry_t*[codexPtr + 1]));
+	if(codex == NULL){
+		printf("\aFatal codex reallocation error on flip.\n");
+		return false;
+	}
+	codex[codexPtr] = stack[stackPtr];
+	stack = realloc(stack, sizeof(nry_t*[stackPtr]));
+	stackPtr--;
+	return true;
+}
+
+bool Unflip(){
+	if(codexPtr <= -1){
+		printf("\aThere are no elements on the codex to unflip.\n");
+		return false;
+	}
+
+	stackPtr++;
+	stack = realloc(stack, sizeof(nry_t*[stackPtr + 1]));
+	if(stack == NULL){
+		printf("\aFatal stack reallocation error on unflip.\n");
+		return false;
+	}
+	stack[stackPtr] = codex[codexPtr];
+	codex = realloc(codex, sizeof(nry_t[codexPtr]));
+	codexPtr--;
+	return true;
+}
+
+bool initmac(){
+	for(int i = 0; i < regAmount; i++){
+		makenry(&regs[i], 8);
+		memset(regs[i].base, 0, 8);
+	}
+
+	bool bol = true;
+	stackPtr = -1;
+	stack = malloc(1);
+	if(stack == NULL) bol &= false;
+	codexPtr = -1;
+	codex = malloc(1);
+	if(codex == NULL) bol &= false;
+	return bol;
+}
+
+void freemac(){
+	for(; stackPtr >= 0; stackPtr--){
+		freenry(stack[stackPtr]);
+		free(stack[stackPtr]);
+	}
+	free(stack);
+	for(; codexPtr >= 0; codexPtr--){
+		freenry(codex[codexPtr]);
+		free(codex[codexPtr]);
+	}
+	free(codex);
+	for(int i = 0; i < regAmount; i++){
+		makenry(&regs[i], 8);
+		memset(regs[i].base, 0, 8);
+	}
+	for(int i = 0; i < regAmount; i++) freenry(&regs[i]);
 }
 
 #endif
