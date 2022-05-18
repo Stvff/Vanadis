@@ -174,11 +174,18 @@ int main(int argc, char** argv){
 	if(!initmac()) return -1;
 	file_t file;
 
+	bool pusharg = false;
+	nry_t temp;
+	makenry(&temp, 0);
 	for(int i = 1; i < argc; i++){
-		if(mfopen(argv[i], &file) != NULL){
+		if(pusharg){
+			pushtost(strcpytonry(&temp, argv[i]));
+		} else if(mfopen(argv[i], &file) != NULL){
 			mode = 'f';
+			pusharg = true;
 		} else running = false;
 	}
+	freenry(&temp);
 
 	while(running){
 		if(!getinput(UserInput, &file, &mode)) break;

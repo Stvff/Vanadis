@@ -6,6 +6,5 @@ rmr jr
 	cmp ir, gr1
 	Cs rjmp jr
 nprint ir
-sub $0, time
-mul $0, 1-
+rsub $0, time
 nprint $0

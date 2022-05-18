@@ -24,8 +24,8 @@ rules:
 
       ## Registers
     - identifier: "\\b(?i)(gr1|gr2|gr3|gr4|gr5|gr6|ir|jr|ans)(?-i)\\b"
-    - identifier: "\\b(?i)(staptr|cdxptr|offset|time)(?-i)\\b"
-    - identifier: "\\b(?i)(form|flag|loop)(?-i)\\b"
+    - identifier: "\\b(?i)(stkptr|cdxptr|offset|time)(?-i)\\b"
+    - identifier: "\\b(?i)(form|flag)(?-i)\\b"
 
       ## Constants
       # Number - it works

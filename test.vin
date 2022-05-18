@@ -12,5 +12,6 @@ set ir, 0
 	inc ir
 	cmp ir, 10
 	Cs jmp "label"
+	Ce jmp "anoth"
 	:anoth
 print 443 + 445 | l

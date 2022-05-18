@@ -49,6 +49,14 @@ nry_t* freenry(nry_t* des){
 	return des;
 }
 
+nry_t* remakenry(nry_t* des, uint64_t len){
+	des->base = realloc(des->base, len + 8);
+	des->fst = des->base;
+	memset(des->base + len, 0, 8);
+	des->len = len;
+	return des;
+}
+
 nry_t* makeimnry(nry_t* des, nry_t* src){
 	des->base = malloc(src->len + 8);
 	des->len = src->len;
@@ -79,14 +87,23 @@ nry_t* appendnry(nry_t* des, nry_t* src){
 }
 
 nry_t* inttonry(nry_t* des, uint64_t inte, int form){
-	freenry(des);
-	makenry(des, 1 + 7*(form%2));
+	remakenry(des, 1 + 7*(form%2));
 	switch(form){
 		case 0: SN des->base = (int8_t) inte; break;
 		case 1: SL des->base = (int64_t) inte; break;
 		case 2: UN des->base = (uint8_t) inte; break;
 		case 3: UL des->base = (uint64_t) inte; break;
 	}
+	return des;
+}
+
+nry_t* strcpytonry(nry_t* des, char* str){
+	uint64_t i = 0;
+	while(str[i] != '\0'){
+		i++;
+	}
+	remakenry(des, i);
+	memcpy(des->base, str, i);
 	return des;
 }
 
@@ -97,44 +114,23 @@ nry_t* strtonry(nry_t* des, char* str, int* start){
 		if(str[i] == '\\') i++;
 		i++; j++;
 	}
-	freenry(des);
-	makenry(des, j);
+	remakenry(des, j);
 
 	j = 0;
 	int n;
 	for(n = *start; n < i; n++){
 		if(str[n] == '\\'){
 			switch (str[n+1]){
-				case '0':
-					des->base[j] = '\0';
-					break;
-				case 'a':
-					des->base[j] = '\a';
-					break;
-				case 'b':
-					des->base[j] = '\b';
-					break;
-				case 't':
-					des->base[j] = '\t';
-					break;
-				case 'v':
-					des->base[j] = '\v';
-					break;
-				case 'f':
-					des->base[j] = '\f';
-					break;
-				case 'r':
-					des->base[j] = '\r';
-					break;
-				case 'n':
-					des->base[j] = '\n';
-					break;
-				case '\\':
-					des->base[j] = '\\';
-					break;
-				case '\"':
-					des->base[j] = '\"';
-					break;
+				case '0': des->base[j] = '\0'; break;
+				case 'a': des->base[j] = '\a'; break;
+				case 'b': des->base[j] = '\b'; break;
+				case 't': des->base[j] = '\t'; break;
+				case 'v': des->base[j] = '\v'; break;
+				case 'f': des->base[j] = '\f'; break;
+				case 'r': des->base[j] = '\r'; break;
+				case 'n': des->base[j] = '\n'; break;
+				case '\\': des->base[j] = '\\'; break;
+				case '\"': des->base[j] = '\"'; break;
 			}
 			n++;
 		} else des->base[j] = str[n];
@@ -265,10 +261,7 @@ nry_t* cutnry(nry_t* des, nry_t* src, uint64_t start, uint64_t end){
 		nry_t part; makenry(&part, temp);
 		ptr = &part;
 	} else {
-		des->base = realloc(des->base, temp + 8);
-		memset(des->base + temp, 0, 8);
-		des->fst = des->base;
-		des->len = temp;
+		remakenry(des, temp);
 	}
 	for(uint64_t i = 0; i < temp; i++)
 		ptr->base[i] = src->base[(start + i) % src->len];

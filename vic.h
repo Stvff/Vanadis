@@ -359,7 +359,7 @@ nry_t* exec(int ins, nry_t** args, bool* doprint){
 // sinput
 		case sinput*4 ... sinput*4 + 3:dummy = 0; if(UN args[2]->fst == 0){
 			fgets(UserInput, userInputLen, stdin);
-			strtonry(args[0], UserInput, (int*)&dummy);} else
+			strcpytonry(args[0], UserInput);} else
 			strtonry(args[0], (char*) args[1]->fst, (int*)&dummy);
 			break;
 
