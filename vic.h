@@ -47,7 +47,7 @@ enum registerEnum {
 
 char instructionString[][maxKeywordLen] = {
 	"set", "dset", "iget", "iset",
-	"inc", "dec", "add", "sub", "mul", "div", "mod",
+	"inc", "dec", "add", "sub", "rsub", "mul", "div", "mod",
 	"app", "rot", "shf", "rshf", "rev", "sel", "cut", "ins",
 	"ptra", "ptrs", "ptr", "len", "fst",
 	"push", "pop", "peek", "flip", "unf",
@@ -61,7 +61,7 @@ char instructionString[][maxKeywordLen] = {
 
 enum instructionEnum {
 	set, dset, iget, iset,
-	inc, dec, add, sub, mul, divi, modu,
+	inc, dec, add, sub, rsub, mul, divi, modu,
 	app, rot, shf, rshf, rev, sel, cut, ins,
 	ptra, ptrs, ptr, len, fstF,
 	push, pop, peek, flip, unf,
@@ -217,6 +217,12 @@ nry_t* exec(int ins, nry_t** args, bool* doprint){
 		case sub*4 + 1: SL args[0]->fst -= SL args[1]->fst; break; // l
 		case sub*4 + 2: UN args[0]->fst -= UN args[1]->fst; break; // u
 		case sub*4 + 3: UL args[0]->fst -= UL args[1]->fst; break; // u l
+
+// rsub
+		case rsub*4:     SN args[0]->fst = SN args[1]->fst - SN args[0]->fst; break;
+		case rsub*4 + 1: SL args[0]->fst = SL args[1]->fst - SL args[0]->fst; break; // l
+		case rsub*4 + 2: UN args[0]->fst = UN args[1]->fst - UN args[0]->fst; break; // u
+		case rsub*4 + 3: UL args[0]->fst = UL args[1]->fst - SL args[0]->fst; break; // u l
 
 // mul
 		case mul*4:     SN args[0]->fst *= SN args[1]->fst; break;

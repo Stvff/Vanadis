@@ -12,8 +12,9 @@ rules:
     ## stdlib
     - statement: "\\b(?i)(set|dset|len|rot|shf|rev)(?-i)\\b"
     - statement: "\\b(?i)(app|sel|cut|ins)(?-i)\\b"
+    - statement: "\\b(?i)(ptr|ptra|ptrs|fst)(?-i)\\b"
     - statement: "\\b(?i)(inc|dec|add|sub|rsub|mul|div|mod)(?-i)\\b"
-    - statement: "\\b(?i)(print|nprint|sprint|input|sinput|fread|fwrite|flen)(?-i)\\b"
+    - statement: "\\b(?i)(print|nprint|sprint|ninput|sinput|fread|fwrite|flen)(?-i)\\b"
     - statement: "\\b(?i)(cmp|Ce|Cn|Cg|Cs)(?-i)\\b"
     - statement: "\\b(?i)(jmp|rjmp|rmr)(?-i)\\b"
     - statement: "\\b(?i)(push|pop|peek|flip|unf)(?-i)\\b"
