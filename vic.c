@@ -79,7 +79,7 @@ bool interpret(char* userInput, file_t** file, char* mode){
 				if(regNr >= stkptr) switch (regNr){
 					case stkptr: inttonry(&regs[stkptr], stackPtr, 1); break;
 					case cdxptr: inttonry(&regs[cdxptr], codexPtr, 1); break;
-					case tme: time_t thetime = time(&thetime); inttonry(&regs[tme], (uint64_t)thetime, form); break;
+					case tme: thetime = time(&thetime); inttonry(&regs[tme], (uint64_t)thetime, form); break;
 				}
 			} else {
 				printf("Invalid register on argument %d.\n", argNr);

@@ -303,6 +303,8 @@ int64_t stackPtr;
 int64_t codexPtr;
 nry_t regs[regAmount];
 
+time_t thetime;
+
 bool pushtost(nry_t* src){
 	stackPtr++;
 	stack = realloc(stack, sizeof(nry_t*[stackPtr + 1]));
