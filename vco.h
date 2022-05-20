@@ -393,10 +393,6 @@ void freemac(){
 		free(codex[codexPtr]);
 	}
 	free(codex);
-	for(int i = 0; i < regAmount; i++){
-		makenry(&regs[i], 8);
-		memset(regs[i].base, 0, 8);
-	}
 	for(int i = 0; i < regAmount; i++) freenry(&regs[i]);
 }
 

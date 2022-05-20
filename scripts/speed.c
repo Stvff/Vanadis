@@ -2,7 +2,6 @@
 #include "../vco.h"
 #include <time.h>
 
-time_t thetime;
 uint64_t dummy = 0;
 
 void speedmain(){

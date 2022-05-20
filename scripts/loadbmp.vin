@@ -1,0 +1,35 @@
+; sta summary: ( path -- imagedata width height path )
+set form, 3
+peek gr6
+flip
+
+sprint "Offset to pixels: "
+set gr2, 4
+fread gr2, gr6, 10
+nprint gr2
+
+sprint "Size of block: "
+set gr1, 4
+fread gr1, gr6, 34
+nprint gr1
+
+; This is where the imagedata is read
+fread gr1, gr6, gr2
+push gr1
+; </imagedatareading>
+
+sprint "Width: "
+set gr1, 4
+fread gr1, gr6, 18
+app gr1, 0 + 0 + 0 + 0 | n
+push gr1
+nprint gr1
+
+sprint "Height: "
+set gr1, 4
+fread gr1, gr6, 22
+app gr1, 0 + 0 + 0 + 0 | n
+push gr1
+nprint gr1
+
+unf

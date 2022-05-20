@@ -87,7 +87,7 @@ char* mfgets(char* string, int size, file_t* file){
 file_t* mfopen(char* path, file_t* file){
 	FILE* fp = fopen(path, "r");
 	if(fp == NULL){
-		printf("\aCould not read file '%s'.\n", path);
+		printf("\aCould not open file '%s'.\n", path);
 		return NULL;
 	}
 

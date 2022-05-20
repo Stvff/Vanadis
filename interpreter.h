@@ -135,7 +135,7 @@ nry_t* exec(int ins, nry_t** args, bool* doprint){
 // pop
 		case pop*4 ... pop*4 + 3: *doprint &= popfromst(args[0]); break;
 // peek
-		case peek*4 ... peek*4 + 3: if(stackPtr == 0){ printf("\aThere are no elements on the stack\n"); *doprint = false; break;}
+		case peek*4 ... peek*4 + 3: if(stackPtr == -1){ printf("\aThere are no elements on the stack\n"); *doprint = false; break;}
 			copynry(args[0], stack[stackPtr]); break;
 // flip
 		case flip*4:     dummy = (uint64_t) SN args[0]->fst; goto trueflip;

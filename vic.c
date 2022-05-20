@@ -180,7 +180,10 @@ int main(int argc, char** argv){
 			pushtost(strcpytonry(&temp, argv[i]));
 		} else {
 			file = openscript(argv[i], file);
-			if(file == NULL) running = false;
+			if(file == NULL){
+				running = false;
+				break;
+			}
 			else {
 				mode = 'f';
 				pusharg = true;
