@@ -251,8 +251,9 @@ nry_t* exec(int ins, nry_t** args, bool* doprint){
 	return retptr;
 }
 
-void filerelexec(int ins, nry_t** args, file_t* file){
+void filerelexec(int ins, nry_t** args, file_t** filepp){
 	int dummy;
+	file_t* file = *filepp;
 	switch(ins){
 		case rmr*4 ... rmr*4 + 3: inttonry(args[0], file->pos, ins%4); break;
 		case rjmp*4: case rjmp*4 + 2: file->pos = UN args[0]->fst; goto truerjmp;
@@ -266,6 +267,9 @@ void filerelexec(int ins, nry_t** args, file_t* file){
 			if(dummy == -1){ printf("\aLabel '%s' does not exist.\n", args[1]->fst); break;}
 			inttonry(args[1], file->pos, ins%4);
 			file->pos = file->labelposs[dummy];
+			break;
+		case run*4 ... run*4 + 3:
+			*filepp = openscript((char*)args[0]->fst, file);
 			break;
 	}
 }

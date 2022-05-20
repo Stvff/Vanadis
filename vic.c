@@ -1,7 +1,7 @@
 #include "interpreter.h"
 #include "compiler.h"
 
-bool interpret(char* userInput, file_t* file, char* mode){
+bool interpret(char* userInput, file_t** file, char* mode){
 	nry_t* args[argumentAmount];
 	nry_t temps[argumentAmount];
 	bool stackref[argumentAmount];
@@ -138,7 +138,8 @@ bool interpret(char* userInput, file_t* file, char* mode){
 	return true;
 }
 
-bool getinput(char* userInput, file_t* file, char* mode){
+bool getinput(char* userInput, file_t** filepp, char* mode){
+	file_t* file = *filepp;
 	switch(*mode){
 		case 't':
 			printf("<> ");
@@ -155,8 +156,9 @@ bool getinput(char* userInput, file_t* file, char* mode){
 			}
 		case 'f':
 			if(mfgets(userInput, userInputLen, file) == NULL){
-//				printf("\n");
-				return false;
+				*filepp = closescript(file);
+				userInput[0] = '\0';
+				if(*filepp == NULL) return false;
 			}
 			break;
 	}
@@ -168,7 +170,7 @@ int main(int argc, char** argv){
 	bool running = true;
 	char mode = 't';
 	if(!initmac()) return -1;
-	file_t file;
+	file_t* file = NULL;
 
 	bool pusharg = false;
 	nry_t temp;
@@ -176,22 +178,23 @@ int main(int argc, char** argv){
 	for(int i = 1; i < argc; i++){
 		if(pusharg){
 			pushtost(strcpytonry(&temp, argv[i]));
-		} else if(mfopen(argv[i], &file) != NULL){
-			mode = 'f';
-			pusharg = true;
-		} else running = false;
+		} else {
+			file = openscript(argv[i], file);
+			if(file == NULL) running = false;
+			else {
+				mode = 'f';
+				pusharg = true;
+			}
+		}
 	}
 	freenry(&temp);
 
 	while(running){
 		if(!getinput(UserInput, &file, &mode)) break;
-//		printf("userInput: %s", userInput);
+//		printf("userInput: %s", UserInput);
 		if(!interpret(UserInput, &file, &mode)) break;;
 	}
 
-	if(mode == 'f'){
-		mfclose(&file);
-	}
 	freemac();
 	free(UserInput);
 	return 0;

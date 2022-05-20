@@ -55,16 +55,17 @@ int strlook(char string[], int thewordlen, char source[][thewordlen], int* readh
 // ######################################################################################## custom file functions
 #define labelSize 20
 
-typedef struct PREVfil {
+/*typedef struct PREVfile {
 	int fileNr;
 	uint64_t prevfile;
-} prev_t;
+} prev_t;*/
 
 typedef struct FILEstuff {
 	uint64_t len;
 	uint64_t pos;
 	char* mfp;
-	prev_t prev;
+//	prev_t prev;
+	struct FILEstuff* prevfile;
 	uint64_t* labelposs;
 	char (*labels)[labelSize];
 } file_t;
@@ -99,6 +100,23 @@ file_t* mfopen(char* path, file_t* file){
 	file->pos = 0;
 
 	fclose(fp);
+	return file;
+}
+
+void mfclose(file_t* file){
+	free(file->mfp); file->mfp = NULL;
+	file->pos = 0;
+	file->len = 0;
+}
+
+file_t* openscript(char* path, file_t* file){
+	file_t* prev = file;
+	file = malloc(sizeof(file_t));
+	if(mfopen(path, file) == NULL){
+		free(file);
+		return prev;
+	}
+	file->prevfile = prev;
 
 	file->labels = NULL;
 	file->labelposs = NULL;
@@ -134,18 +152,17 @@ file_t* mfopen(char* path, file_t* file){
 	file->labels[labelAm][0] = '\0';
 
 	file->pos = 0;
-	return file;
+	return file;	
 }
 
-void mfclose(file_t* file){
-	free(file->mfp);
-	free(file->labelposs);
-	free(file->labels);
-	file->mfp = NULL;
-	file->labelposs = NULL;
-	file->labels = NULL;
-	file->pos = 0;
-	file->len = 0;
+file_t* closescript(file_t* file){
+	mfclose(file);
+	free(file->labelposs); file->labelposs = NULL;
+	free(file->labels); file->labels = NULL;
+	file_t* next = file;
+	file = next->prevfile;
+	free(next);
+	return file;
 }
 
 // ######################################################################################## machine functions

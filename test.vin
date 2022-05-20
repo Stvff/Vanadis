@@ -6,12 +6,14 @@ rmr jr
 	cmp ir, 10
 	Cs rjmp jr
 print gr1
+run "test2.vin"
 set ir, 0
 :label
 	nprint ir
 	inc ir
-	cmp ir, 10
+	cmp ir, 12
 	Cs jmp "label"
 	Ce jmp "anoth"
+	sprint "this should not be here"
 	:anoth
 print 443 + 445 | l
