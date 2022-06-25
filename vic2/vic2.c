@@ -138,56 +138,6 @@ bool interpret(char* userInput, file_t** file, char* mode){
 	return true;
 }
 
-bool compile(char* userInput, file_t** filepp){
-	if(UL regs[gr1].base == 0) strcpytonry(&regs[gr1], "#include \"vco.h\"\n\nvoid mmain(){\n");
-	strcpytonry(&regs[gr2], "\t");
-
-	int form = (UN regs[formr].base)%4;
-	uint8_t argNr = 0;
-	int insNr = -2;
-	int readhead = 0;
-	int p = 0;
-	while(userInput[p] != '|' && !EndLine(&userInput[p])){
-		if(insNr == -1) break;
-		if(!IsSpace(&userInput[p]) && insNr == -2){
-			insNr = strlook(userInput, maxKeywordLen, instructionString, &p);
-//			printf("instr: %d\n", insNr);
-			readhead = p + 1;
-			if(insNr != -1){ switch(insNr){
-				case endprog: return false; break;
-				case Ce: appendnry(&regs[gr2], strcpytonry(&regs[gr3], "if(SN regs[flag].base == 0)\n")); insNr = -2; break;
-				case Cg: appendnry(&regs[gr2], strcpytonry(&regs[gr3], "if(SN regs[flag].base == 1)\n")); insNr = -2; break;
-				case Cs: appendnry(&regs[gr2], strcpytonry(&regs[gr3], "if(SN regs[flag].base == 2)\n")); insNr = -2; break;
-				case Cn: appendnry(&regs[gr2], strcpytonry(&regs[gr3], "if(SN regs[flag].base != 0)\n")); insNr = -2; break;
-//				case rmr ... rjmp: filerelated = true; break;
-			}}
-		}
-		p++;
-//		if(userInput[p] == '$') stackref[argNr] = true;
-		if(userInput[p] == ',') argNr++;
-//		if(userInput[p] == '+') temps[argNr].len++;
-		if(userInput[p] == '|') form = format(userInput, p);
-	}
-	if(insNr == -2) return true;
-	if(insNr == -1){
-		printf("Invalid instruction.\n");
-		return false;
-	}
-
-	instrstrs(insNr, &regs[gr3]);
-	appendnry(&regs[gr2], &regs[gr3]);
-	appendnry(&regs[gr1], &regs[gr2]);
-
-	if((*filepp)->pos == (*filepp)->len){
-		appendnry(&regs[gr1], strcpytonry(&regs[3], "}\n\nint main(){\ninitmac();\nmmain();\nfreemac();\nreturn 0;}\n"));
-		quicfptr = fopen("out.c", "w+");
-		fwrite(regs[gr1].base, regs[gr1].len, 1, quicfptr);
-		fclose(quicfptr);
-	}
-	return true;
-}
-
-
 bool getinput(char* userInput, file_t** filepp, char* mode){
 	file_t* file = *filepp;
 	switch(*mode){

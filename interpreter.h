@@ -5,8 +5,6 @@
 
 // ######################################################################################## execs
 nry_t* exec(int ins, nry_t** args, bool* doprint){
-	uint64_t dummy;
-	FILE* quicfptr;
 	nry_t* retptr = args[0];
 	switch (ins) {
 // set
@@ -106,6 +104,7 @@ nry_t* exec(int ins, nry_t** args, bool* doprint){
 		case cut*4 + 3: cutnry(args[0], args[0], UL args[1]->fst, UL args[2]->fst); break;
 
 // ins
+		case inse*4 ... inse*4 + 3: insertnry(args[0], args[1], nrytoint(args[2], ins%4)); break;
 
 // ptra
 		case ptra*4:     args[0]->fst = args[0]->base + ((args[0]->fst-args[0]->base) + SN args[1]->fst) % args[0]->len; break;
@@ -128,7 +127,7 @@ nry_t* exec(int ins, nry_t** args, bool* doprint){
 // len
 		case len*4 ... len*4 + 3: inttonry(args[0], args[1]->len, 3); break;
 // fst
-		case fstF*4 ... fstF*4 + 3: inttonry(args[0], args[1]->fst - args[1]->base, ins%4); break;
+		case fstF*4 ... fstF*4 + 3: inttonry(args[0], args[1]->fst - args[1]->base, 3); break;
 
 // push
 		case push*4 ... push*4 + 3: *doprint &= pushtost(args[0]); break;

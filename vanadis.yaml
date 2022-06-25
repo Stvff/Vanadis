@@ -10,7 +10,7 @@ rules:
     ## aasm
     - statement: "([>])"
     ## stdlib
-    - statement: "\\b(?i)(set|dset|len|rot|shf|rev)(?-i)\\b"
+    - statement: "\\b(?i)(set|dset|len|rot|shf|rshf)(?-i)\\b"
     - statement: "\\b(?i)(app|sel|cut|ins)(?-i)\\b"
     - statement: "\\b(?i)(ptr|ptra|ptrs|fst)(?-i)\\b"
     - statement: "\\b(?i)(inc|dec|add|sub|rsub|mul|div|mod)(?-i)\\b"
@@ -47,4 +47,4 @@ rules:
         start: "(;|#)"
         end: "$"
         rules:
-            - todo: "(TODO|XXX|FIXME|cdx|sta|--|[)]|[(]):?"
+            - todo: "(TODO|XXX|FIXME|cdx|stk|--|[)]|[(]):?"

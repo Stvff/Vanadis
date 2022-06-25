@@ -1,4 +1,5 @@
 #!/bin/vic
+jmp "mainc"
 :mainl
 	pop gr1
 	sprint gr1
