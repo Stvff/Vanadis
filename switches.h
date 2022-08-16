@@ -90,6 +90,12 @@ rrr evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs){
 				u64 regd[0] = regp[0]->fst - regp[0]->fst;
 				regp[0] = NULL;
 				break;
+// sizeof
+			case opSizeof:
+				regd[0] = alld[ regd[1]!=alld[0]?0:1 ];
+				u64 regd[0] *= typeBylen(globalType);
+				regp[0] = NULL;
+				break;
 // swap
 			case opSwap:
 				dummy = (uint64_t) regp[1];

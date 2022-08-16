@@ -40,11 +40,11 @@ char instructionKinds[][argumentAmount+1] = {
 };
 
 char operationString[] = {
-	'$', '!', '^', ']', '>', '*', '*', 'l', 'o', '~', ',', '%', 'S' };
+	'$', '!', '^', ']', '>', '*', '*', 'l', 'o', 't', '~', ',', '%', 'S' };
 enum operationEnum {
 	opStackref, opImm, opMakenry, opEntry, opRef, opEntryKeep, opRefKeep,
-	opLength, opOffset, opSwap,
-	opComma, opNry, opNrs
+	opLength, opOffset, opSizeof,
+	opSwap, opComma, opNry, opNrs
 };
 
 char typeString[][4] = {

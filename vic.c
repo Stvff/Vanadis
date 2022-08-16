@@ -134,6 +134,17 @@ char* buildargs(int* readhead, file_t* sourcefile, char ins){
 				}
 				kinds[0] = 'd';
 				break;
+			case 't':
+//				printf("op is t %x\n", opSizeof);
+				dummy = opSizeof;
+				section = arrapp(section, u16 section, (char*) &dummy, 1);
+				(u16 section)++;
+				if(kinds[0]!='d'){
+					error("\aOperator 't' expects a datum, not a page or nothing.\n", *readhead, sourcefile);
+					goto endonerror;
+				}
+				kinds[0] = 'd';
+				break;				
 			case '~':
 //				printf("op is ~ %x\n", opLength);
 				dummy = opSwap;
@@ -224,8 +235,8 @@ char* buildargs(int* readhead, file_t* sourcefile, char ins){
 		(*readhead)++;
 	} while(*readhead < userInputLen);
 	argkinds[commaam] = kinds[0];
-	if(!checkkinds((signed char)ins, argkinds, sourcefile)){
-		free(section); goto endonerror;}
+	if(!checkkinds((signed char)ins, argkinds, sourcefile))
+		goto endonerror;
 	freenry(&dnry);
 	return section;
 	endonerror:

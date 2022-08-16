@@ -1,0 +1,53 @@
+filetype: Vanadis
+
+detect:
+    filename: "\\.(vic)$"
+
+rules:
+    # This file is made for Vanadis, it is adapted from the NASM assembly file from micro itself
+
+    ## Instructions
+    - statement: "\\b(?i)(alloc|free|push|pop|flip|unf)(?-i)\\b"
+    - statement: "\\b(?i)(mov|set|mcpy|rsz)(?-i)\\b"
+    - statement: "\\b(?i)(inc|dec|add|sub|mul|div|mod)(?-i)\\b"
+    - statement: "\\b(?i)(print|nprint|sprint|ninput|sinput|fread|fwrite|flen)(?-i)\\b"
+    - statement: "\\b(?i)(cmp|equ)(?-i)\\b"
+    - statement: "\\b(?i)(input|print|lib)(?-i)\\b"
+    - statement: "\\b(?i)(fread|fwrite|flen)(?-i)\\b"
+    - statement: "\\b(?i)(Ce|Cs|Cg|Cn|jmp|call|ret)(?-i)\\b"
+#    - symbol.operator: "[$]"
+#    - symbol.operator: "[!]"
+#    - symbol.operator: "[\\^]"
+#    - symbol.operator: "[\\[]"
+#    - symbol.operator: "[\\]]"
+#    - symbol.operator: "[\\<]"
+#    - symbol.operator: "[*]"
+#    - symbol.operator: "[>lot~,%]"
+    - symbol.operator: "[;]"
+
+      ## Types
+    - type: "\\b(?i)(chr|i8|u8)(?-i)\\b"
+    - type: "\\b(?i)(i16|u16|i32|u32)(?-i)\\b"
+    - type: "\\b(?i)(i64|u64|wrd|f32|f64)(?-i)\\b"
+
+      ## Constants
+    - constant.number: "\\b[0-9]+\\b"
+    - constant.number: "[-]"
+    - constant.number: ":+[a-z A-Z 0-9]+\\b"
+
+      ## Other
+#    - preproc: "\\b(?i)(jmp|call|ret)(?-i)\\b"
+
+
+    - constant.string:
+        start: "\""
+        end: "\""
+        skip: "\\\\."
+        rules:
+            - constant.specialChar: "\\\\."
+
+    - comment:
+        start: "(#)"
+        end: "$"
+        rules:
+            - todo: "(TODO|XXX|FIXME|cdx|stk|--|[)]|[(]):?"
