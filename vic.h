@@ -1,172 +1,194 @@
-#ifndef VANADIS_H
-#define VANADIS_H
-#include "vco.h"
+#ifndef VCO_H
+#define VCO_H
+#include "nry.h"
+#include "iostr.h"
+
+#define userInputLen 512
+#define maxKeywordLen 16
+#define argumentAmount 4
 
 // ######################################################################################## instructions
 char instructionString[][maxKeywordLen] = {
-	"set", "dset", "iget", "iset",
-	"inc", "dec", "add", "sub", "rsub", "mul", "div", "mod",
-	"app", "rot", "shf", "rshf", "rev", "sel", "cut", "ins",
-	"ptra", "ptrs", "ptr", "len", "fst",
-	"push", "pop", "peek", "flip", "unf",
-	"cmp", "equ", "Ce", "Cs", "Cg", "Cn",
-	"ninput", "sinput",
+	"alloc", "free", "push", "pop", "flip", "unf",
+	"mov", "set", "mcpy", "rsz",
+	"inc", "dec", "add", "sub", "mul", "div", "mod",
+	"cmp", "equ",
+	"input", "print", "lib",
 	"fread", "fwrite", "flen",
-	"rmr", "jmp", "run", "prun", "rjmp",
-	"print", "nprint", "sprint",
-	"\\", "\0end"
+	"Ce", "Cs", "Cg", "Cn", "jmp", "call", "ret",
+	"\0end"
 };
 
 enum instructionEnum {
-	set, dset, iget, iset,
-	inc, dec, add, sub, rsub, mul, divi, modu,
-	app, rot, shf, rshf, rev, sel, cut, inse,
-	ptra, ptrs, ptr, len, fstF,
-	push, pop, peek, flip, unf,
-	cmp, equ, Ce, Cs, Cg, Cn,
-	ninput, sinput,
+	allocst, freest, push, pop, flip, unf,
+	mov, set, mcpy, rsz,
+	inc, dec, add, sub, mul, divi, modu,
+	cmp, equ,
+	input, print, lib,
 	firead, fiwrite, flen,
-	rmr, jmp, run, prun, rjmp,
-	print, nprint, sprint,
-	endprog
+	Ce, Cs, Cg, Cn, jmp, call, ret,
+	final
 };
 
-// ######################################################################################## custom string functions
-int strlook(char string[], int thewordlen, char source[][thewordlen], int* readhead){
-	int item = 0;
-	int j;
-	bool isthis;
-	while (source[item][0] != '\0'){
-		isthis = true;
-		j = 0;
-		while (source[item][j] != '\0'){
-			if(string[j + *readhead] != source[item][j]) isthis = false;
-			j++;
-		}
-		if(isthis){
-			*readhead += --j;
-			return item;
-		}
-		item++;
-	}
-	return -1;
-}
+char instructionKinds[][argumentAmount+1] = {
+	"d___", "d___", "p___", "p___", "d___", "d___",
+	"pp__", "dd__", "ppd_", "pd__",
+	"d___", "d___", "ddd_", "ddd_", "ddd_", "ddd_", "ddd_",
+	"dd__", "pp__",
+	"ppd_", "pdd_", "pppp",
+	"ppd_", "ppdd", "dp__"
+};
 
-// ######################################################################################## custom file functions
-#define labelSize 20
+char operationString[] = {
+	'$', '!', '^', ']', '>', '*', '*', 'l', 'o', '~', ',', '%', 'S' };
+enum operationEnum {
+	opStackref, opImm, opMakenry, opEntry, opRef, opEntryKeep, opRefKeep,
+	opLength, opOffset, opSwap,
+	opComma, opNry, opNrs
+};
 
-/*typedef struct PREVfile {
-	int fileNr;
-	uint64_t prevfile;
-} prev_t;*/
-
-typedef struct FILEstuff {
-	uint64_t len;
-	uint64_t pos;
-	char* mfp;
-//	prev_t prev;
-	struct FILEstuff* prevfile;
-	uint64_t* labelposs;
-	char (*labels)[labelSize];
-} file_t;
-
-char* mfgets(char* string, int size, file_t* file){
-	int64_t i = 0;
-	if(file->pos == file->len) return NULL;
-	do {
-		string[i] = file->mfp[file->pos + i];
-		i++;
-	} while(file->mfp[file->pos + i - 1] != '\n' && i <= size-1 && file->pos + i <= file->len);
-
-	string[i] = '\0';
-	file->pos += i;
-//	printf("-------------------------------- %s\n", string);
-	return string;
-}
-
-file_t* mfopen(char* path, file_t* file){
-	FILE* fp = fopen(path, "r");
-	if(fp == NULL){
-		printf("\aCould not open file '%s'.\n", path);
-		return NULL;
-	}
-
-	fseek(fp, 0, SEEK_END);
-	file->len = ftell(fp);
-	fseek(fp, 0, SEEK_SET);
-
-	file->mfp = malloc(file->len);
-	fread(file->mfp, file->len, 1, fp);
-	file->pos = 0;
-
-	fclose(fp);
-	return file;
-}
-
-void mfclose(file_t* file){
-	free(file->mfp); file->mfp = NULL;
-	file->pos = 0;
-	file->len = 0;
-}
-
-file_t* openscript(char* path, file_t* file){
-	file_t* prev = file;
-	file = malloc(sizeof(file_t));
-	if(mfopen(path, file) == NULL){
-		free(file);
-		return prev;
-	}
-	file->prevfile = prev;
-
-	file->labels = NULL;
-	file->labelposs = NULL;
-	int labelAm = 0;
-	char buf[userInputLen];
-	while(mfgets(buf, labelSize, file) != NULL){
-		int i = 0;
-		int j = 0;
-		bool look = false;
-		while(buf[i] != '\0' && i < userInputLen){
-			if(buf[i] != ':' && EndLine(&buf[i])) break;
-//			printf("%c, %d, %d\n", buf[i], i, look);
-			if(look) {
-				if(IsSpace(&buf[i])) break;
-				if(j+2 >= labelSize) break;
-				file->labels[labelAm - 1][j] = buf[i];
-				file->labels[labelAm - 1][++j] = '\0';
-//				printf("%c", buf[i]);
-			} else if(buf[i] != ':' && !IsSpace(&buf[i])) break;
-			if(buf[i] == ':'){
-				look = true;
-				labelAm++;
-				file->labels = realloc(file->labels, sizeof(char[labelAm][labelSize]));
-				file->labelposs = realloc(file->labelposs, sizeof(uint64_t[labelAm]));
-				file->labelposs[labelAm - 1] = file->pos;
-//				printf("\n");
-			}
-			i++;
-		}
-//		printf("------------------------------------\n");
-	}
-	file->labels = realloc(file->labels, sizeof(char[labelAm + 1][labelSize]));
-	file->labels[labelAm][0] = '\0';
-
-	file->pos = 0;
-	return file;	
-}
-
-file_t* closescript(file_t* file){
-	mfclose(file);
-	free(file->labelposs); file->labelposs = NULL;
-	free(file->labels); file->labels = NULL;
-	file_t* next = file;
-	file = next->prevfile;
-	free(next);
-	return file;
-}
+char typeString[][4] = {
+	"chr", "i8", "u8",
+	"i16", "u16", "i32", "u32",
+	"i64", "u64", "f32", "f64", "\0end"
+};
 
 // ######################################################################################## machine functions
-// ######################################################################################## machine functions
-// ######################################################################################## machine functions
+uint8_t flag;
+int STANDARDtype = I32;
+int globalType;
+nry_t** stack;
+nry_t** codex;
+int64_t stackPtr;
+int64_t codexPtr;
+int64_t stackFrameOffset;
+
+time_t thetime;
+char* UserInput;
+uint64_t dummy;
+uint64_t silly;
+uint64_t giddy;
+FILE* quicfptr;
+file_t* quicmfptr;
+
+bool stalloc(int64_t amount){
+	if(amount < 0){
+		printf("\aStack allocation amount can not be a negative value.\n");
+		return false;
+	} else if(amount == 0) amount = 1;
+	stackPtr += amount;
+	stack = realloc(stack, sizeof(nry_t*[stackPtr + 1]));
+	if(stack == NULL){
+		printf("\aFatal stack reallocation error on alloc.\n");
+		return false;
+	}
+	for(int i = stackPtr-amount + 1; i < stackPtr + 1; i++){
+		stack[i] = malloc(sizeof(nry_t));
+//		printf("stackelptr: %lx\n", (uint64_t) stack[i]);
+		makenry(stack[i], 8);
+	}
+	return true;
+}
+
+bool stfree(int64_t amount){
+	if(amount < 0){
+		printf("\aStack free amount can not be a negative value.\n");
+		return false;
+	} else if(amount == 0) amount = 1;
+	amount = stackPtr - amount;
+	for(; stackPtr > -1 && stackPtr > amount; stackPtr--){
+		freenry(stack[stackPtr]);
+		free(stack[stackPtr]);
+	}
+	if(stackPtr == -1) stack = realloc(stack, 1);
+	else stack = realloc(stack, sizeof(nry_t*[stackPtr + 1]));
+	return true;
+}
+
+bool pushtost(nry_t* src){
+	stackPtr++;
+	stack = realloc(stack, sizeof(nry_t*[stackPtr + 1]));
+	if(stack == NULL){
+		printf("\aFatal stack reallocation error on push.\n");
+		return false;
+	}
+	stack[stackPtr] = malloc(sizeof(nry_t));
+	makeimnry(stack[stackPtr], src);
+	return true;
+}
+
+bool popfromst(nry_t* des){
+	if(stackPtr < 0){
+		printf("\aThere are no elements on the stack to pop.\n");
+		return false;
+	}
+	copynry(des, stack[stackPtr]);
+	freenry(stack[stackPtr]);
+	free(stack[stackPtr]);
+	stack = realloc(stack, sizeof(nry_t*[stackPtr]));
+	stackPtr--;
+	return true;
+}
+
+bool Flip(){
+	if(stackPtr <= -1){
+		printf("\aThere are no elements on the stack to flip.\n");
+		return false;
+	}
+
+	codexPtr++;
+	codex = realloc(codex, sizeof(nry_t*[codexPtr + 1]));
+	if(codex == NULL){
+		printf("\aFatal codex reallocation error on flip.\n");
+		return false;
+	}
+	codex[codexPtr] = stack[stackPtr];
+	stack = realloc(stack, sizeof(nry_t*[stackPtr]));
+	stackPtr--;
+	return true;
+}
+
+bool Unflip(){
+	if(codexPtr <= -1){
+		printf("\aThere are no elements on the codex to unflip.\n");
+		return false;
+	}
+
+	stackPtr++;
+	stack = realloc(stack, sizeof(nry_t*[stackPtr + 1]));
+	if(stack == NULL){
+		printf("\aFatal stack reallocation error on unflip.\n");
+		return false;
+	}
+	stack[stackPtr] = codex[codexPtr];
+	codex = realloc(codex, sizeof(nry_t[codexPtr]));
+	codexPtr--;
+	return true;
+}
+
+bool initmac(){
+	bool bol = true;
+	stackPtr = -1;
+	stackFrameOffset = 0;
+	stack = malloc(1);
+	if(stack == NULL) bol &= false;
+	codexPtr = -1;
+	codex = malloc(1);
+	if(codex == NULL) bol &= false;
+	return bol;
+}
+
+void freemac(){
+	for(; stackPtr >= 0; stackPtr--){
+		freenry(stack[stackPtr]);
+		free(stack[stackPtr]);
+	}
+	free(stack);
+	for(; codexPtr >= 0; codexPtr--){
+		freenry(codex[codexPtr]);
+		free(codex[codexPtr]);
+	}
+	free(codex);
+}
 
 #endif

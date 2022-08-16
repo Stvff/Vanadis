@@ -1,3 +1,3 @@
-gcc -Wall -Os vic.c -o vic
-cp vanadis.yaml ~/.config/micro/syntax/
-./vic test.vin
+gcc -lm -Wall -g3 -fsanitize=address vic.c -o vic
+#gcc vic.c -lm -Wall -o vic
+./vic test.vic

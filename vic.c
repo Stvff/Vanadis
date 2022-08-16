@@ -1,261 +1,566 @@
-#include "interpreter.h"
-#include "compiler.h"
+#include "nry.h"
+#include "vic.h"
+#include "iostr.h"
+#include "switches.h"
 
-bool interpret(char* userInput, file_t** file, char* mode){
-	nry_t* args[argumentAmount];
-	nry_t temps[argumentAmount];
-	bool stackref[argumentAmount];
-	for(int i = 0; i < argumentAmount; i++){
-		args[i] = &temps[i];
-		args[i]->len = 1;
-		stackref[i] = false;
-	}
+void error(char* errormessage, int readhead, file_t* file){
+	int newlines = 0;
+	for(uint64_t i = 0; i < file->pos; i++)
+		if(file->mfp[i] == '\n') newlines++;
+	printf("%s at the %dth char:\n", errormessage, readhead);
+	int skip = printf(" %d|", newlines);
+	printf("%s\n", UserInput);
+	for(int i = 0; i < readhead + skip - 1; i++)
+		printf(" ");
+	printf("<^>\n");
+}
 
-	bool filerelated = false;
-	int form = (UN regs[formr].base)%4;
-	uint8_t argNr = 0;
-	int insNr = -2;
-	int readhead = 0;
-	int p = 0;
-	while(userInput[p] != '|' && !EndLine(&userInput[p])){
-		if(insNr == -1) break;
-		if(!IsSpace(&userInput[p]) && insNr == -2){
-			insNr = strlook(userInput, maxKeywordLen, instructionString, &p);
-//			printf("instr: %d\n", insNr);
-			readhead = p + 1;
-			if(insNr != -1){ switch(insNr){
-				case endprog: return false; break;
-				case Ce: if(SN regs[flag].base == 0) insNr = -2; else return true; break;
-				case Cg: if(SN regs[flag].base == 1) insNr = -2; else return true; break;
-				case Cs: if(SN regs[flag].base == 2) insNr = -2; else return true; break;
-				case Cn: if(SN regs[flag].base != 0) insNr = -2; else return true; break;
-				case rmr ... rjmp: filerelated = true; break;
-			}}
-		}
-		p++;
-		if(userInput[p] == '$') stackref[argNr] = true;
-		if(userInput[p] == ',') argNr++;
-		if(userInput[p] == '+') temps[argNr].len++;
-		if(userInput[p] == '|') form = format(userInput, p);
-	}
-	if(insNr == -2) return true;
-	if(insNr == -1){
-		printf("Invalid instruction.\n");
-		return true;
-	}
-//	printf("form: %d\n", form);
+bool checkkinds(signed char ins, char* kinds, file_t* file){
+	bool good = true;
+//	printf("checking kinds: %s %s? %s\n", instructionString[ins], kinds, instructionKinds[ins]);
+	for(signed char i = 0; (i < argumentAmount) && good; i++)
+		good = kinds[i] == instructionKinds[ins][i];
+	if(good) return good;
+	int newlines = 0;
+	for(uint64_t i = 0; i < file->pos; i++)
+		if(file->mfp[i] == '\n') newlines++;
+	printf("\aThe given arguments on the following line were not of the correct kind:\n");
+	printf(" %d|%s\n\n", newlines, UserInput);
+	printf("The instruction '%s' expects:\n\t%s ", instructionString[ins], instructionString[ins]);
+	for(signed char i = 0; i < argumentAmount && instructionKinds[ins][i] != '_'; i++)
+		printf("<%s>, ", instructionKinds[ins][i]=='p'?"page":"datum");
+	printf("\b\b;\nbut was given:\n\t%s ", instructionString[ins]);
+	for(signed char i = 0; i < argumentAmount && kinds[i] != '_'; i++)
+		printf("<%s>, ", kinds[i]=='p'?"page":"datum");
+	printf("\b\b;\n");
+	return false;
+}
 
-	if(form%2 == 1){ for(int i = 0; i < argumentAmount; i++) args[i]->len *= 8; }
-	for(int i = 0; i < argumentAmount; i++){
-//		printf("length of arg %d is %lu", i, args[i]->len);
-		makenry(&temps[i], temps[i].len);
-//		printf(", base is: %lx\n",  (int64_t) args[i]->base);
-		memset(temps[i].base, 0, temps[i].len);
-	}
+char* arrapp(char* des, uint64_t deslen, char* src, uint64_t srclen){
+	des = realloc(des, deslen + srclen);
+	memcpy(des + deslen, src, srclen);
+	return des;
+}
 
-	int regNr = -2;
-	argNr = 0;
-	uint64_t digNr = 0;
-	uint64_t dig = 0;
-	uint64_t inc = 1 + 7*(form%2);
-	while(userInput[readhead] != '|' && !EndLine(&userInput[readhead])){
-/* numbers */
-		if(IsNr(&userInput[readhead])){
-			dig = inputtoint(userInput, readhead, &readhead, true);
-//			printf("dig: %lu\n", dig);
-			switch(form){
-				case 0: SN (args[argNr]->base + digNr) = (int8_t) dig; break;
-				case 1: SL (args[argNr]->base + digNr) = (int64_t) dig; break;
-				case 2: UN (args[argNr]->base + digNr) = (uint8_t) dig; break;
-				case 3: UL (args[argNr]->base + digNr) = (uint64_t) dig; break;
-			}
-		}
-/* registers */
-		if(IsAlph(&userInput[readhead])){
-			regNr = strlook(userInput, maxKeywordLen, registerString, &readhead);
-//			printf("entry: %c, register: %d\n", userInput[readhead], regNr);
-			if(regNr != -1){
-				args[argNr] = &regs[regNr];
-				if(regNr >= stkptr) switch (regNr){
-					case stkptr: inttonry(&regs[stkptr], stackPtr, 1); break;
-					case cdxptr: inttonry(&regs[cdxptr], codexPtr, 1); break;
-					case tme: thetime = time(&thetime); inttonry(&regs[tme], (uint64_t)thetime, form); break;
+char* buildargs(int* readhead, file_t* sourcefile, char ins){
+	char* section = malloc(2);
+	u16 section = 2;
+	SkipSpaces(UserInput, userInputLen, readhead);
+	if(EndLine(UserInput + *readhead)) return section;
+	nry_t dnry; makenry(&dnry, 8);
+	signed char commaam = 0;
+	char kinds[2] = {'_', '_'};
+	char argkinds[argumentAmount] = "____";
+	do{
+		switch(UserInput[*readhead]){
+			case '$':
+//				printf("op is $ %x\n", opStackref);
+				dummy = opStackref;
+				section = arrapp(section, u16 section, (char*) &dummy, 1);
+				(u16 section)++;
+				if(kinds[0]!='d'){
+					error("\aOperator '$' expects a datum, not a page or nothing.\n", *readhead, sourcefile);
+					goto endonerror;
 				}
-			} else {
-				printf("Invalid register on argument %d.\n", argNr);
-				goto endsafe;
-			}
+				kinds[0] = 'p';
+				break;
+			case '!':
+//				printf("op is ! %x\n", opImm);
+				dummy = opImm;
+				section = arrapp(section, u16 section, (char*) &dummy, 1);
+				(u16 section)++;
+				if(kinds[0]!='p'){
+					error("\aOperator '!' expects a page, not a datum or nothing.\n", *readhead, sourcefile);
+					goto endonerror;
+				}
+				kinds[0] = 'd';
+				break;
+			case '^':
+//				printf("op is ^ %x\n", opMakenry);
+				dummy = opMakenry;
+				section = arrapp(section, u16 section, (char*) &dummy, 1);
+				(u16 section)++;
+				if(kinds[0]!='d'){
+					error("\aOperator '!' expects a datum, not a page or nothing.\n", *readhead, sourcefile);
+					goto endonerror;
+				}
+				kinds[0] = 'p';
+				break;
+			case ']':
+//				printf("op is ] %x\n", opEntry);
+				dummy = opEntry;
+				section = arrapp(section, u16 section, (char*) &dummy, 1);
+				(u16 section)++;
+				if(kinds[0]!='d' || kinds[1]!='p'){
+					error("\aOperator ']' expects a page and a datum (in that order).\n", *readhead, sourcefile);
+					goto endonerror;
+				}
+				kinds[0] = 'd';
+				break;
+			case '>':
+//				printf("op is > %x\n", opRef);
+				dummy = opRef;
+				section = arrapp(section, u16 section, (char*) &dummy, 1);
+				(u16 section)++;
+				if(kinds[0]!='d' || kinds[1]!='p'){
+					error("\aOperator '>' expects a page and a datum (in that order).\n", *readhead, sourcefile);
+					goto endonerror;
+				}
+				break;
+			case '*':
+//				printf("op is *\n");
+				if(u8(section - 1 + u16 section) == opEntry || u8(section - 1 + u16 section) == opRef)
+					u8 (section - 1 + u16 section) += 2;
+				break;
+			case 'l':
+//				printf("op is l %x\n", opLength);
+				dummy = opLength;
+				section = arrapp(section, u16 section, (char*) &dummy, 1);
+				(u16 section)++;
+				if(kinds[0]!='p'){
+					error("\aOperator 'l' expects a page, not a datum or nothing.\n", *readhead, sourcefile);
+					goto endonerror;
+				}
+				kinds[0] = 'd';
+				break;
+			case 'o':
+//				printf("op is o %x\n", opLength);
+				dummy = opOffset;
+				section = arrapp(section, u16 section, (char*) &dummy, 1);
+				(u16 section)++;
+				if(kinds[0]!='p'){
+					error("\aOperator 'o' expects a page, not a datum or nothing.\n", *readhead, sourcefile);
+					goto endonerror;
+				}
+				kinds[0] = 'd';
+				break;
+			case '~':
+//				printf("op is ~ %x\n", opLength);
+				dummy = opSwap;
+				section = arrapp(section, u16 section, (char*) &dummy, 1);
+				(u16 section)++;
+				if(kinds[0]!='_' || kinds[1]!='_'){
+					error("\aNot enough elements to swap.\n", *readhead, sourcefile);
+					goto endonerror;
+				}
+				dummy = kinds[0]; kinds[0] = kinds[1]; kinds[1] = dummy;
+				break;
+			case ',':
+//				printf("kind is , %x\n", opComma);
+				if(commaam + 1>= argumentAmount){
+					error("\aToo many arguments. (maximum is 4)\n", *readhead, sourcefile);
+					goto endonerror;
+				}
+				argkinds[commaam] = kinds[0];
+				commaam++;
+				dummy = opComma;
+				section = arrapp(section, u16 section, (char*) &dummy, 1);
+				(u16 section)++;
+				kinds[0] = '_'; kinds[1] = '_';
+				break;
+			case '"':
+//				printf("kind is \" %x\n", opNry);
+				dummy = opNry;
+				section = arrapp(section, u16 section, (char*) &dummy, 1);
+				(u16 section)++;
+				(*readhead)++;
+				strtonry(&dnry, UserInput, readhead);
+//				aprintnry(&dnry, Chr, true);
+				/*length*/
+				section = arrapp(section, u16 section, (char*) &dnry.len, 2);
+				u16 section += 2;
+				/*offset*/
+				dummy = dnry.fst - dnry.base;
+				section = arrapp(section, u16 section, (char*) &dummy, 2);
+				u16 section += 2;
+				/*data*/
+				section = arrapp(section, u16 section, (char*)dnry.base, dnry.len);
+				u16 section += (uint16_t) dnry.len;
+				(*readhead)--;
+				kinds[1] = kinds[0]; kinds[0] = 'p';
+				break;
+			case '%':
+//				printf("kind is nry %x\n", opNry);
+				(*readhead)++;
+				SkipSpaces(UserInput, userInputLen, readhead);
+				if(!(IsNr(UserInput + *readhead) || UserInput[*readhead] == '\'' || UserInput[*readhead] == '+')){
+					error("\aInvalid page declaration. Allowed characters are 0-9, -, \', +, spaces and tabs", *readhead, sourcefile);
+					goto endonerror;
+				}
+				dummy = opNry;
+				section = arrapp(section, u16 section, (char*) &dummy, 1);
+				(u16 section)++;
+				inptonry(&dnry, UserInput, readhead, globalType);
+				/*length*/
+				section = arrapp(section, u16 section, (char*) &dnry.len, 2);
+				u16 section += 2;
+				/*offset*/
+				dummy = dnry.fst - dnry.base;
+				section = arrapp(section, u16 section, (char*) &dummy, 2);
+				u16 section += 2;
+				/*data*/
+//				aprintnry(&dnry, globalType, true);
+				section = arrapp(section, u16 section, (char*)dnry.base, dnry.len);
+				u16 section += (uint16_t) dnry.len;
+				(*readhead)--;
+				kinds[1] = kinds[0]; kinds[0] = 'p';
+				break;
+			case '0'...'9': case '-': case '\'': case '+':
+//				printf("kind is nrs %x\n", opNrs);
+				dummy = opNrs;
+				section = arrapp(section, u16 section, (char*) &dummy, 1);
+				(u16 section)++;
+				inptonry(&dnry, UserInput, readhead, globalType);
+				/*data*/
+//				aprintnry(&dnry, globalType, true);
+				section = arrapp(section, u16 section, (char*)dnry.fst, typeBylen(globalType));
+				u16 section += (uint16_t) typeBylen(globalType);
+				(*readhead)--;
+				kinds[1] = kinds[0]; kinds[0] = 'd';
+				break;
 		}
-/* strings */
-		if(userInput[readhead] == '"'){
-//			printf("string, r: %d\n", readhead);
+		if(EndLine(UserInput + *readhead)) break;
+//		printf("char: %c at %d\n", UserInput[*readhead], *readhead);
+		(*readhead)++;
+	} while(*readhead < userInputLen);
+	argkinds[commaam] = kinds[0];
+	if(!checkkinds((signed char)ins, argkinds, sourcefile)){
+		free(section); goto endonerror;}
+	freenry(&dnry);
+	return section;
+	endonerror:
+	free(section);
+	freenry(&dnry);
+	return NULL;
+}
+
+typedef struct LABELstuff {
+	uint32_t labelam;
+	uint64_t* labelpos_s;
+	char** definedlabels;
+	uint32_t jumpam;
+	uint64_t* jumppos_s;
+	char** requiredlabels;
+} lbl_t;
+
+lbl_t* savelabel(file_t* file, char* input, int* readhead, lbl_t* labels){
+//	printf("saving label\n");
+	labels->labelam++;
+	labels->labelpos_s = realloc(labels->labelpos_s, sizeof(uint64_t[labels->labelam]));
+	labels->labelpos_s[labels->labelam-1] = file->len;
+//	printf("labelpos 0x%lx nr %d\n", labels->labelpos_s[labels->labelam-1], labels->labelam-1);
+	labels->definedlabels = realloc(labels->definedlabels, sizeof(char*[labels->labelam]));
+	int i = *readhead;
+//	printf("length?\n");
+	while(IsAlph(input + i) || IsNr(input + i) || input[i] == '_')
+		i++;
+	if(i - *readhead == 0){
+		labels->definedlabels[labels->labelam-1] = malloc(1);
+		error("\aLabel can not be 0 characters long, allowed characters are: a-zA-Z0-9_-\n", i, file);
+		return NULL;
+	}
+//	printf("copy it\n");
+	labels->definedlabels[labels->labelam-1] = malloc(i - *readhead + 2);
+	memcpy(labels->definedlabels[labels->labelam-1], input + *readhead, i - *readhead + 1);
+	labels->definedlabels[labels->labelam-1][i - *readhead] = ' ';
+	labels->definedlabels[labels->labelam-1][i - *readhead + 1] = '\0';
+//	printf("done\n");
+	return labels;
+}
+
+lbl_t* savejmp(file_t* file, char* input, int* readhead, lbl_t* labels){
+//	printf("saving jump\n");
+	labels->jumpam++;
+	labels->jumppos_s = realloc(labels->jumppos_s, sizeof(char*[labels->jumpam+1]));
+	labels->jumppos_s[labels->jumpam-1] = file->len;
+//	printf("jumppos 0x%lx nr %d\n", labels->jumppos_s[labels->jumpam-1], labels->jumpam-1);
+	labels->requiredlabels = realloc(labels->requiredlabels, sizeof(char*[labels->jumpam]));
+	int i = *readhead;
+//	printf("length?\n");
+	while(IsAlph(input + i) || IsNr(input + i) || input[i] == '_')
+		i++;
+	if(i - *readhead == 0){
+		labels->requiredlabels[labels->jumpam-1] = malloc(1);
+		error("\aLabel can not be 0 characters long, allowed characters are: a-zA-Z0-9_-\n", i, file);
+		return NULL;
+	}
+//	printf("copy it\n");
+	labels->requiredlabels[labels->jumpam-1] = malloc(i - *readhead + 2);
+	memcpy(labels->requiredlabels[labels->jumpam-1], input + *readhead, i - *readhead + 1);	
+	labels->requiredlabels[labels->jumpam-1][i - *readhead] = ' ';
+	labels->requiredlabels[labels->jumpam-1][i - *readhead + 1] = '\0';
+//	printf("done\n");
+	return labels;
+}
+
+int solvelabels(file_t* file, lbl_t* labels){
+	int labelnr = -1;
+
+	labels->definedlabels = realloc(labels->definedlabels, sizeof(uint64_t[labels->labelam + 1]));
+	labels->definedlabels[labels->labelam] = malloc(1);
+	labels->definedlabels[labels->labelam][0] = '\0';
+
+	for(uint32_t i = 0; i < labels->jumpam; i++){
+//		printf("Looking for label '%s'\n", labels->requiredlabels[i]);
+		dummy = 0;
+		labelnr = labellook(labels->requiredlabels[i], labels->definedlabels);
+		if(labelnr == -1){
+			printf("\aLabel '%s' does not exist.\n", labels->requiredlabels[i]);
+			free(labels->definedlabels[labels->labelam]);
+			labels->definedlabels = realloc(labels->definedlabels, sizeof(char*[labels->labelam]));
+			return -1;
+		}
+//		printf("hewewowo %d, 0x%lx\n", i, labels->labelpos_s[labelnr]);
+		u64 (file->mfp + labels->jumppos_s[i]) = labels->labelpos_s[labelnr];
+	}
+
+	free(labels->definedlabels[labels->labelam]);
+	labels->definedlabels = realloc(labels->definedlabels, sizeof(char*[labels->labelam]));
+	return 0;
+}
+
+void freelabels(lbl_t* labels){
+	if(labels->labelam != 0){
+//		printf("freeing labels\n");
+		free(labels->labelpos_s);
+		for(uint32_t i = labels->labelam - 1; i != (uint32_t)-1; i--){
+//			printf("%d\n", i);
+			free(labels->definedlabels[i]);
+		}
+		free(labels->definedlabels);
+	}
+	if(labels->jumpam != 0){
+//		printf("freeing jumps\n");
+		free(labels->jumppos_s);
+		for(uint32_t i = labels->jumpam - 1; i != (uint32_t)-1; i--){
+//			printf("%d\n", i);
+			free(labels->requiredlabels[i]);
+		}
+		free(labels->requiredlabels);
+	}
+//	printf("no error with that\n");
+}
+
+bool compile(file_t* sourcefile, file_t* runfile){
+	UserInput = malloc(userInputLen + maxKeywordLen);
+	int readhead, ins, previns = 0;
+	char inssection = 0;
+	char* argsection = NULL;
+	globalType = STANDARDtype;
+
+	lbl_t labeling = {0, NULL, NULL, 0, NULL, NULL};
+	compwhile:
+		readhead = 0; ins = -1;
+/*get input*/
+		if(mfgetsS(UserInput, userInputLen, sourcefile) == NULL)
+			goto endhealthy;
+//		printf("'%s'\n", UserInput);
+		figins:
+		inssection = 0;
+		SkipSpaces(UserInput, userInputLen, &readhead);
+//		printf("%c, %d\n", UserInput[readhead], readhead);
+/*labels*/
+		if(UserInput[readhead] == ':'){
 			readhead++;
-			strtonry(args[argNr], userInput, &readhead);
+			if(savelabel(runfile, UserInput, &readhead, &labeling) == NULL)
+				goto endonerror;
+//			printf("label: %s, %s\n", UserInput, labeling.definedlabels[labeling.labelam-1]);
+			goto compwhile;
 		}
-/* fst */
-		if(userInput[readhead] == '\'') args[argNr]->fst = args[argNr]->base + digNr;
-/* args */
-		if(userInput[readhead] == ','){argNr++; digNr = 0;}
-/* digs */
-		if(userInput[readhead] == '+') digNr += inc;
+/*ins*/
+		if(EndLine(UserInput + readhead)){/*printf("endline, %d\n", readhead);*/ goto compwhile;}
+		ins = keywordlook(UserInput, maxKeywordLen, instructionString, &readhead);
+		if(ins == -1){
+/*type*/
+			ins = keywordlook(UserInput, 4, typeString, &readhead);
+			if(ins == -1){
+				error("\aInvalid keyword", readhead, sourcefile);
+				goto endonerror;//end
+			}
+			globalType = ins;
+			inssection = 1;
+		}
+		if(previns%2 == 0 && previns/2 >= Ce && previns/2 <= Cn && inssection == 1){
+				error("\aType designation in a conditional statement", readhead, sourcefile);
+				goto endonerror;//end
+		}
 		readhead++;
-//		printf("readhead: %d, entry: %c\n", readhead, userInput[readhead]);
-	}
+/*writing ins*/
+		inssection += ins*2; previns = inssection;
+		mfapp(runfile, &inssection, 1);
+		if(inssection%2 == 1) goto figins;//loop
+		if(inssection == jmp*2 || inssection == call*2){
+			SkipSpaces(UserInput, userInputLen, &readhead);
+			globalType = STANDARDtype;
+			if(savejmp(runfile, UserInput, &readhead, &labeling) == NULL)
+				goto endonerror;
+//			printf("jump: %s, %s\n", UserInput, labeling.definedlabels[labeling.labelam-1]);
+			dummy = 0;
+			mfapp(runfile, (char*) &dummy, 8);
+			goto compwhile;
+		} else if(inssection%2 == 0 && ins >= Ce && ins <= Cn){
+			goto figins;
+		} 
+/*args*/
+		argsection = buildargs(&readhead, sourcefile, inssection/2);
+		if(argsection == NULL) goto endonerror;//end
+		mfapp(runfile, argsection, u16 argsection);
+		free(argsection); argsection = NULL;
+//		printf("Endofloop\n");
+	goto compwhile;//loop
 
-	for(int i = 0; i < argumentAmount; i++){
-//		printf("arg %d: ", i); aprintnry(args[i], form, true);
-		if(stackref[i]){
-			int64_t acc = 0; switch(form){
-				case 0: acc = SN args[i]->fst; break;
-				case 1: acc = SL args[i]->fst; break;
-				case 2: acc = UN args[i]->fst; break;
-				case 3: acc = UL args[i]->fst; break;}
-			acc += SL regs[offset].fst;
-			if(acc < 0 || acc > stackPtr){
-				printf("Tried to access a non-existant element (entry %ld) on the stack.\n", acc);
-				printf("offset: %ld, stkptr: %ld\n", SL regs[offset].fst, stackPtr);
-				goto endsafe;
-			}
-			args[i] = stack[acc];
-		}
-	}
+	endhealthy:
+	if(solvelabels(runfile, &labeling) == -1) goto endonerror;
 
-	bool doprint = false;
-	if(*mode == 't') doprint = true;
-	if(filerelated){
-		if(*mode != 't') filerelexec(insNr*4 + form, args, file);
-		else printf("This instruction only works in a script.\n");
-	} else {
-		nry_t* retptr = exec(insNr*4 + form, args, &doprint);
-		if(doprint){
-			if(insNr < print) aprintnry(retptr, form, true);
-			copynry(&regs[ans], retptr);
-		}
-	}
-
-	endsafe:
-	for(int i = 0; i < argumentAmount; i++) freenry(&temps[i]);
+	free(UserInput);
+	freelabels(&labeling);
 	return true;
-}
-
-bool compile(char* userInput, file_t** filepp){
-	if(UL regs[gr1].base == 0) strcpytonry(&regs[gr1], "#include \"vco.h\"\n\nvoid mmain(){\n");
-	strcpytonry(&regs[gr2], "\t");
-
-	int form = (UN regs[formr].base)%4;
-	uint8_t argNr = 0;
-	int insNr = -2;
-	int readhead = 0;
-	int p = 0;
-	while(userInput[p] != '|' && !EndLine(&userInput[p])){
-		if(insNr == -1) break;
-		if(!IsSpace(&userInput[p]) && insNr == -2){
-			insNr = strlook(userInput, maxKeywordLen, instructionString, &p);
-//			printf("instr: %d\n", insNr);
-			readhead = p + 1;
-			if(insNr != -1){ switch(insNr){
-				case endprog: return false; break;
-				case Ce: appendnry(&regs[gr2], strcpytonry(&regs[gr3], "if(SN regs[flag].base == 0)\n")); insNr = -2; break;
-				case Cg: appendnry(&regs[gr2], strcpytonry(&regs[gr3], "if(SN regs[flag].base == 1)\n")); insNr = -2; break;
-				case Cs: appendnry(&regs[gr2], strcpytonry(&regs[gr3], "if(SN regs[flag].base == 2)\n")); insNr = -2; break;
-				case Cn: appendnry(&regs[gr2], strcpytonry(&regs[gr3], "if(SN regs[flag].base != 0)\n")); insNr = -2; break;
-//				case rmr ... rjmp: filerelated = true; break;
-			}}
-		}
-		p++;
-//		if(userInput[p] == '$') stackref[argNr] = true;
-		if(userInput[p] == ',') argNr++;
-//		if(userInput[p] == '+') temps[argNr].len++;
-		if(userInput[p] == '|') form = format(userInput, p);
-	}
-	if(insNr == -2) return true;
-	if(insNr == -1){
-		printf("Invalid instruction.\n");
-		return false;
-	}
-
-	instrstrs(insNr, &regs[gr3]);
-	appendnry(&regs[gr2], &regs[gr3]);
-	appendnry(&regs[gr1], &regs[gr2]);
-
-	if((*filepp)->pos == (*filepp)->len){
-		appendnry(&regs[gr1], strcpytonry(&regs[3], "}\n\nint main(){\ninitmac();\nmmain();\nfreemac();\nreturn 0;}\n"));
-		quicfptr = fopen("out.c", "w+");
-		fwrite(regs[gr1].base, regs[gr1].len, 1, quicfptr);
-		fclose(quicfptr);
-	}
-	return true;
+	endonerror:
+	free(UserInput);
+	freelabels(&labeling);
+	return false;
 }
 
 
-bool getinput(char* userInput, file_t** filepp, char* mode){
-	file_t* file = *filepp;
-	switch(*mode){
-		case 't':
-			printf("<> ");
-			if(fgets(userInput, userInputLen, stdin) == NULL){
-				printf("\n");
-				return false;
-			}
-			break;
-		case 'e':
-			while(fgets(userInput, userInputLen, stdin) != NULL){
-				printf("-- ");
-				file->mfp = realloc(file->mfp, file->len + userInputLen);
-				strcat(file->mfp, userInput);
-			}
-		case 'F':
-		case 'f':
-			if(mfgets(userInput, userInputLen, file) == NULL){
-				*filepp = closescript(file);
-				userInput[0] = '\0';
-				if(*filepp == NULL){
-					if(*mode == 'F'){
-						*mode = 't';
-					} else return false;
+#define exprbufflen 256
+bool run(file_t* runfile){
+	bool retbool = true;
+	globalType = STANDARDtype;
+	char head;
+	bool insornot;
+	uint16_t exprlen;
+	char* expr = malloc(exprbufflen);
+	nry_t callnr; makenry(&callnr, 16);
+
+	nry_t* args[argumentAmount] = {0};
+	uint8_t* nrs[argumentAmount] = {0};
+
+	while(runfile->pos < runfile->len && retbool){
+		head = runfile->mfp[runfile->pos];
+		runfile->pos++;
+		insornot = head%2;
+		head /= 2;
+		if(insornot){
+//			printf("Type is now %s\n", typeString[(signed char)head]);
+			globalType = head;
+		} else switch(head){
+			case Ce: if(flag != 0) goto skip; break;
+			case Cs: if(flag != 2) goto skip; break;
+			case Cg: if(flag != 1) goto skip; break;
+			case Cn: if(flag == 3) goto skip; break;
+				skip: if(runfile->pos < runfile->len){
+					head = runfile->mfp[runfile->pos]/2;
+					if(head == call || head == jmp) runfile->pos += 9;
+					else runfile->pos += (u16 (runfile->mfp + runfile->pos + 1)) + 1;
+				} break;
+			case call:
+				i64 callnr.base = stackFrameOffset;
+				u64 (callnr.base + 8) = runfile->pos + 8;
+				pushtost(&callnr); Flip();
+				stackFrameOffset = stackPtr;
+//				printf("call, stackFrameOffset: x%lx, runfile->pos: %lx\n", stackFrameOffset, runfile->pos);
+			case jmp:
+				runfile->pos = u64 (runfile->mfp + runfile->pos);
+				globalType = STANDARDtype;
+//				printf("jmp, runfile->pos: x%lx\n", runfile->pos);
+				break;
+			case ret:
+				Unflip();
+				popfromst(&callnr);
+				stackFrameOffset = i64 callnr.base;
+				runfile->pos = u64 (callnr.base + 8);
+				globalType = STANDARDtype;
+//				printf("ret: stackFrameOffset: x%lx, runfile->pos: %lx\n", stackFrameOffset, runfile->pos);
+				break;
+			default:
+//				printf("default, ins: %s, x%x (multiplied by 2 in bin)\n", instructionString[(signed char)head], head);
+				exprlen = u16 (runfile->mfp + runfile->pos);
+				if(exprlen > exprbufflen) expr = realloc(expr, exprlen);
+				memcpy(expr, runfile->mfp + runfile->pos, exprlen);
+//				printf("expressiontime:\n");
+				rrr res = evalexpr(expr, exprlen, args, nrs);
+				if(!res.err){retbool = false; break;}
+//				printf("executiontime\nP0: %lx, P1: %lx, P2: %lx, P3: %lx\nD0: %lx, D1: %lx, D2: %lx, D3: %lx\n",
+//					(uint64_t) args[0], (uint64_t) args[1], (uint64_t) args[2], (uint64_t) args[3],
+//					(uint64_t) nrs[0], (uint64_t) nrs[1], (uint64_t) nrs[2], (uint64_t) nrs[3]);
+				if(!execute(head, args, nrs)){retbool = false; break;}
+				for(signed char i = 0; i < argumentAmount; i++){
+//					printf("free the kind %c\n", res.freu[i]);
+					if(res.freu[i] == 'p'){ freenry(args[i]); free(args[i]);}
+					if(res.freu[i] == 'd') free(nrs[i]);
 				}
-			}
-			break;
+				if(exprlen > exprbufflen) expr = realloc(expr, exprbufflen);
+				runfile->pos += exprlen;
+				break;
+		}
+//		printf("pos x%lx\n", runfile->pos);
 	}
-	return true;
+	freenry(&callnr);
+	free(expr);
+	return retbool;
 }
+
+enum commandlineargsstatemachine {SOURCE_IN = 1, BINARY_IN = 2, STACKARGS = 4, BINARY_OUT = 8, RUN = 16};
+int RETURN = 0;
+#define ENDonERROR {RETURN = 1; goto endonerror;}
+
+union {
+	char te; struct {
+	bool source_in:1;
+	bool binary_in:1;
+	bool stackargs:1;
+	bool binary_out:1;
+	bool run:1;
+	} t;
+} sta;
 
 int main(int argc, char** argv){
-	UserInput = malloc(sizeof(char[userInputLen + userInputLen]));
-	bool running = true;
-	char mode = 't';
-	bool docomp = false;
-	if(!initmac()) return -1;
-	file_t* file = NULL;
-
-	bool pusharg = false;
-	nry_t temp;
-	makenry(&temp, 0);
+	file_t sourcefile = {0, 0, NULL};
+	file_t runfile = {0, 0, NULL};
+	sta.te = SOURCE_IN | RUN;
+	nry_t stackarg = *makenry(&stackarg, 8);
 	for(int i = 1; i < argc; i++){
-		if(pusharg){
-			pushtost(strcpytonry(&temp, argv[i]));
-		} else if(argv[i][0] == '-'){
-			switch(argv[i][1]){
-				case 'i': docomp = true; break;
-				case 'c': mode = 'F'; printf("aaa0-----------------"); break;
-			}
-		} else {
-			file = openscript(argv[i], file);
-			if(file == NULL){ running = false; break; }
-			else { mode = 'f'; pusharg = true; }
+		if(sta.t.stackargs)
+			pushtost(strcpytonry(&stackarg, argv[i]));
+		else if(argv[i][0] == '-') switch (argv[i][1]){
+			case 'b': sta.te = BINARY_IN | RUN; break;
+			case 'r': sta.te |= RUN; break;
+			case 'c': sta.te = SOURCE_IN | BINARY_OUT; break;
+			case 'e': sta.te = SOURCE_IN; break;
+			default: printf("%s\n", argv[i]); break;
+		} else if(sta.t.source_in){
+			quicmfptr = mfopen(argv[i], &sourcefile);
+			if(quicmfptr == NULL) ENDonERROR;
+			sourcefile = *quicmfptr;
+			sta.te |= STACKARGS;
+			initmac();
+		} else if(sta.t.binary_in){
+			quicmfptr = mfopen(argv[i], &runfile);
+			if(quicmfptr == NULL) ENDonERROR;
+			runfile = *quicmfptr;
+			sta.te |= STACKARGS;
+			initmac();
+		} else if(sta.t.binary_out){
+			//savestring;
 		}
 	}
-	freenry(&temp);
-
-	while(running){
-		if(!getinput(UserInput, &file, &mode)) break;
-//		printf("userInput: %s", UserInput);
-//		printf("mode: %c\n", mode);
-		if(docomp){ if(!compile(UserInput, &file)) break;}
-		else if(!interpret(UserInput, &file, &mode)) break;
+	freenry(&stackarg);
+	if(sta.t.source_in){
+		if(!compile(&sourcefile, &runfile)) ENDonERROR;
+	}
+	mfclose(&sourcefile);
+	if(sta.t.binary_out){
+		printf("filelen: %ld\n", runfile.len);
+		quicfptr = fopen("out.vco", "wb");
+		fwrite(runfile.mfp, 1, runfile.len, quicfptr);
+		fclose(quicfptr);
+	}
+	if(sta.t.run){
+		if(!run(&runfile)) ENDonERROR;
 	}
 
-	freemac();
-	free(UserInput);
-	return 0;
+	endonerror:
+	mfclose(&sourcefile);
+	mfclose(&runfile);
+	return RETURN;
 }

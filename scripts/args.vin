@@ -1,8 +1,0 @@
-#!/bin/vic
-jmp "mainc"
-:mainl
-	pop gr1
-	sprint gr1
-	:mainc
-	cmp stkptr, -1 | l
-	Cn jmp "mainl"
