@@ -13,8 +13,8 @@ char instructionString[][maxKeywordLen] = {
 	"mov", "set", "mcpy", "rsz",
 	"inc", "dec", "add", "sub", "mul", "div", "mod",
 	"cmp", "equ",
-	"input", "print", "lib",
-	"fread", "fwrite", "flen",
+	"input", "printd", "print", "lib",
+	"fread", "fwrite", "flen", "ex",
 	"Ce", "Cs", "Cg", "Cn", "jmp", "call", "ret",
 	"\0end"
 };
@@ -24,8 +24,8 @@ enum instructionEnum {
 	mov, set, mcpy, rsz,
 	inc, dec, add, sub, mul, divi, modu,
 	cmp, equ,
-	input, print, lib,
-	firead, fiwrite, flen,
+	input, printd, print, lib,
+	firead, fiwrite, flen, ex,
 	Ce, Cs, Cg, Cn, jmp, call, ret,
 	final
 };
@@ -35,8 +35,8 @@ char instructionKinds[][argumentAmount+1] = {
 	"pp__", "dd__", "ppd_", "pd__",
 	"d___", "d___", "ddd_", "ddd_", "ddd_", "ddd_", "ddd_",
 	"dd__", "pp__",
-	"ppd_", "pdd_", "pppp",
-	"ppd_", "ppdd", "dp__"
+	"ppd_", "dd__", "pd__", "pppp",
+	"ppd_", "ppdd", "dp__", "d___"
 };
 
 char operationString[] = {

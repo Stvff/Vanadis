@@ -10,10 +10,10 @@ rules:
     - statement: "\\b(?i)(alloc|free|push|pop|flip|unf)(?-i)\\b"
     - statement: "\\b(?i)(mov|set|mcpy|rsz)(?-i)\\b"
     - statement: "\\b(?i)(inc|dec|add|sub|mul|div|mod)(?-i)\\b"
-    - statement: "\\b(?i)(print|nprint|sprint|ninput|sinput|fread|fwrite|flen)(?-i)\\b"
     - statement: "\\b(?i)(cmp|equ)(?-i)\\b"
-    - statement: "\\b(?i)(input|print|lib)(?-i)\\b"
+    - statement: "\\b(?i)(input|print|printd|lib)(?-i)\\b"
     - statement: "\\b(?i)(fread|fwrite|flen)(?-i)\\b"
+    - statement: "\\b(?i)(ex)(?-i)\\b"
     - statement: "\\b(?i)(Ce|Cs|Cg|Cn|jmp|call|ret)(?-i)\\b"
 #    - symbol.operator: "[$]"
 #    - symbol.operator: "[!]"
@@ -31,7 +31,7 @@ rules:
     - type: "\\b(?i)(i64|u64|wrd|f32|f64)(?-i)\\b"
 
       ## Constants
-    - constant.number: "\\b[0-9]+\\b"
+    - constant.number: "\\b[0-9t]+\\b"
     - constant.number: "[-]"
     - constant.number: ":+[a-z A-Z 0-9]+\\b"
 

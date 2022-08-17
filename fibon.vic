@@ -1,7 +1,7 @@
 u8 alloc 3
 u64
 mov 0$, % 0 + 1;
-chr print "How many iterations?\n> ", 1, 0
+chr print "How many iterations?\n> ", 1
 u64 input 2$, 0^, 0;
 :loop
 	u64
@@ -11,5 +11,5 @@ u64 input 2$, 0^, 0;
 	dec 2$!
 	cmp 2$!, 0
 	Cg jmp loop
-u64 print 0$, 0, 0
+u64 print 0$, 0
 free 3

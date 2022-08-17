@@ -23,11 +23,12 @@ rrr evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs){
 	nry_t* regp[2] = {NULL, NULL};
 	uint8_t* regd[2] = {NULL, NULL};
 	nry_t* allp[2] = {malloc(sizeof(nry_t)), malloc(sizeof(nry_t))}; allp[0]->base = NULL; allp[1]->base = NULL;
-	uint8_t* alld[2] = {malloc(sizeof(uint64_t)), malloc(sizeof(uint64_t))};
+	uint8_t* alld[2] = {malloc(sizeof(uint64_t)), malloc(sizeof(uint64_t))}; u64 alld[0] = 0; u64 alld[1] = 0;
 //	printf("ap: %lx, %lx\nad: %lx, %lx\n", (uint64_t) allp[0], (uint64_t) allp[1], (uint64_t) alld[0], (uint64_t) alld[1]);
 	uint8_t anr = 0;
 	uint8_t argnr = 0;
 //	printf("Solving expression now\n");
+//	printf("exprlen: x%x\n", exprlen);
 	for(uint16_t readhead = 2; readhead < exprlen; readhead++){
 		val = u8 (expr + readhead);
 //		printf("p: %lx, %lx\nd: %lx, %lx\n", (uint64_t) regp[0], (uint64_t) regp[1], (uint64_t) regd[0], (uint64_t) regd[1]);
@@ -87,7 +88,7 @@ rrr evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs){
 // offset
 			case opOffset:
 				regd[0] = alld[ regd[1]!=alld[0]?0:1 ];
-				u64 regd[0] = regp[0]->fst - regp[0]->fst;
+				u64 regd[0] = regp[0]->fst - regp[0]->base;
 				regp[0] = NULL;
 				break;
 // sizeof
@@ -129,7 +130,7 @@ rrr evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs){
 				args[argnr] = regp[0];
 				nrs[argnr] = regd[0];
 				allp[0] = malloc(sizeof(nry_t)); allp[1] = malloc(sizeof(nry_t)); allp[0]->base = NULL; allp[1]->base = NULL;
-				alld[0] = malloc(sizeof(uint64_t)); alld[1] = malloc(sizeof(uint64_t));
+				alld[0] = malloc(sizeof(uint64_t)); alld[1] = malloc(sizeof(uint64_t)); u64 alld[0] = 0; u64 alld[1] = 0;
 				regp[0] = NULL; regp[1] = NULL; regd[0] = NULL; regd[1] = NULL;
 				argnr++;
 				break;
@@ -346,23 +347,23 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 				break;
 			} free(UserInput);
 			break;
-// print
-		case print:
-			if(u8 nrs[2] == 0) aprintnry(args[0], globalType, u8 nrs[1] == 0);
-			else {switch(globalType){
-				case Chr: printf("%c", chr args[0]->fst); break;
-				case I8:  printf("%d", i8 args[0]->fst); break;
-				case U8:  printf("%u", u8 args[0]->fst); break;
-				case I16: printf("%d", i16 args[0]->fst); break;
-				case U16: printf("%u", u16 args[0]->fst); break;
-				case I32: printf("%d", i32 args[0]->fst); break;
-				case U32: printf("%u", u32 args[0]->fst); break;
-				case I64: printf("%ld", i64 args[0]->fst); break;
-				case U64: printf("%lu", u64 args[0]->fst); break;
-				case F32: printf("%f", f32 args[0]->fst); break;
-				case F64: printf("%lf", f64 args[0]->fst); break;
-			} if(u8 nrs[1] == 0) printf("\n");}
+//printd
+		case printd: switch(globalType){
+				case Chr: printf("%c", chr nrs[0]); break;
+				case I8:  printf("%d", i8 nrs[0]); break;
+				case U8:  printf("%u", u8 nrs[0]); break;
+				case I16: printf("%d", i16 nrs[0]); break;
+				case U16: printf("%u", u16 nrs[0]); break;
+				case I32: printf("%d", i32 nrs[0]); break;
+				case U32: printf("%u", u32 nrs[0]); break;
+				case I64: printf("%ld", i64 nrs[0]); break;
+				case U64: printf("%lu", u64 nrs[0]); break;
+				case F32: printf("%f", f32 nrs[0]); break;
+				case F64: printf("%lf", f64 nrs[0]); break;
+			} if(u8 nrs[1] == 0) printf("\n");
 			break;
+// print
+		case print: aprintnry(args[0], globalType, u8 nrs[1] == 0); break;
 
 // lib
 		case lib: retbool &= libraryfunctionexposedtoVanadis(args); break;

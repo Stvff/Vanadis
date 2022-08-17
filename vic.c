@@ -150,7 +150,7 @@ char* buildargs(int* readhead, file_t* sourcefile, char ins){
 				dummy = opSwap;
 				section = arrapp(section, u16 section, (char*) &dummy, 1);
 				(u16 section)++;
-				if(kinds[0]!='_' || kinds[1]!='_'){
+				if(kinds[0] == '_' || kinds[1] == '_'){
 					error("\aNot enough elements to swap.\n", *readhead, sourcefile);
 					goto endonerror;
 				}
@@ -376,6 +376,7 @@ bool compile(file_t* sourcefile, file_t* runfile){
 			if(savelabel(runfile, UserInput, &readhead, &labeling) == NULL)
 				goto endonerror;
 //			printf("label: %s, %s\n", UserInput, labeling.definedlabels[labeling.labelam-1]);
+			globalType = STANDARDtype;
 			goto compwhile;
 		}
 /*ins*/
@@ -400,9 +401,9 @@ bool compile(file_t* sourcefile, file_t* runfile){
 		inssection += ins*2; previns = inssection;
 		mfapp(runfile, &inssection, 1);
 		if(inssection%2 == 1) goto figins;//loop
+		if(inssection%2 == 0 && ins >= jmp && ins <= ret) globalType = STANDARDtype;
 		if(inssection == jmp*2 || inssection == call*2){
 			SkipSpaces(UserInput, userInputLen, &readhead);
-			globalType = STANDARDtype;
 			if(savejmp(runfile, UserInput, &readhead, &labeling) == NULL)
 				goto endonerror;
 //			printf("jump: %s, %s\n", UserInput, labeling.definedlabels[labeling.labelam-1]);
@@ -458,7 +459,7 @@ bool run(file_t* runfile){
 			case Ce: if(flag != 0) goto skip; break;
 			case Cs: if(flag != 2) goto skip; break;
 			case Cg: if(flag != 1) goto skip; break;
-			case Cn: if(flag == 3) goto skip; break;
+			case Cn: if(flag == 0) goto skip; break;
 				skip: if(runfile->pos < runfile->len){
 					head = runfile->mfp[runfile->pos]/2;
 					if(head == call || head == jmp) runfile->pos += 9;
