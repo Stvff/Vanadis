@@ -36,10 +36,10 @@ rrr evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs){
 		switch(val){
 // stack
 			case opStackref: 
-				dummy = stackFrameOffset + (int64_t)integer(regd[0], globalType);
+				dummy = stackFrameOffset + sinteger(regd[0], globalType);
 				if((int64_t) dummy > stackPtr || (int64_t) dummy < 0){
 					printf("\aInvalid stack reference.\n");
-					printf("stackPtr was %ld, stackFrameOffset was %ld, stack reference was %ld,\n", stackPtr, stackFrameOffset, (int64_t)integer(regd[0], globalType));
+					printf("stackPtr was %ld, stackFrameOffset was %ld, stack reference was %ld,\n", stackPtr, stackFrameOffset, sinteger(regd[0], globalType));
 					printf("resulting in attempted read at %ld.\n", (int64_t) dummy);
 					ret.err = false; break;
 				}
@@ -59,23 +59,23 @@ rrr evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs){
 				break;
 // direct
 			case opEntry:
-				regd[0] = regp[1]->base + (((int64_t) integer(regd[0], globalType)) % regp[1]->len);
+				regd[0] = regp[1]->base + ((sinteger(regd[0], globalType)) % regp[1]->len);
 				regp[0] = NULL;
 				break;
 // relative
 			case opRef:
-				regd[0] = regp[1]->base + ((regp[1]->fst - regp[1]->base + (int64_t) integer(regd[0], globalType)) % regp[1]->len);
+				regd[0] = regp[1]->base + ((regp[1]->fst - regp[1]->base + sinteger(regd[0], globalType)) % regp[1]->len);
 				regp[0] = NULL;
 				break;
 // directAffect
 			case opEntryKeep:
-				regp[1]->fst = regp[1]->base + (((int64_t) integer(regd[0], globalType)) % regp[1]->len);
+				regp[1]->fst = regp[1]->base + ((sinteger(regd[0], globalType)) % regp[1]->len);
 				regd[0] = regp[1]->fst;
 				regp[0] = NULL;
 				break;
 // relativeAffect
 			case opRefKeep:
-				regp[1]->fst = regp[1]->base + ((regp[1]->fst - regp[1]->base + (int64_t) integer(regd[0], globalType)) % regp[1]->len);
+				regp[1]->fst = regp[1]->base + ((regp[1]->fst - regp[1]->base + sinteger(regd[0], globalType)) % regp[1]->len);
 				regd[0] = regp[1]->fst;
 				regp[0] = NULL;
 				break;
@@ -217,6 +217,21 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 			for(uint64_t i = 0; i < dummy; i++) if(!Unflip()){ retbool &= false; break;};
 			if(!retbool) break;
 			break;
+
+// staptr
+		case staptr: switch(globalType){
+			case Chr...U8: u8 nrs[0] = stackPtr; break;
+			case I16: case U16: u16 nrs[0] = stackPtr; break;
+			case I32: case U32: case F32: u32 nrs[0] = (float) stackPtr; break;
+			case I64: case U64: case F64: u64 nrs[0] = (double) stackPtr; break;
+		} break;
+// cdxptr
+		case cdxptr: switch(globalType){
+			case Chr...U8: u8 nrs[0] = codexPtr; break;
+			case I16: case U16: u16 nrs[0] = codexPtr; break;
+			case I32: case U32: case F32: u32 nrs[0] = (float) codexPtr; break;
+			case I64: case U64: case F64: u64 nrs[0] = (double) codexPtr; break;
+		} break;
 
 // mov
 		case mov: copynry(args[0], args[1]); break;
@@ -371,20 +386,20 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 // firead
 		case firead:
 			quicfptr = fopen((char*)(args[1]->fst), "rb");
-			if(quicfptr == NULL){ printf("\aCould not open file '%s'.\n", args[0]->fst); retbool &= false; break;}
+			if(quicfptr == NULL){ i8 nrs[3] = -1; break;} i8 nrs[3] = 0;
 			dummy = integer(args[0]->fst, globalType); freenry(args[0]); makenry(args[0], dummy);
 			fseek(quicfptr, integer(nrs[2], globalType), SEEK_SET); fread(args[0]->base, 1, dummy, quicfptr);
 			fclose(quicfptr); break;
 // fwrite
 		case fiwrite:
 			if(u8 args[3]->fst == 0) quicfptr = fopen((char*)(args[1]->fst), "wb"); else quicfptr = fopen((char*)(args[1]->fst), "wb+");
-			if(quicfptr == NULL){ printf("\aCould not open or create file '%s'.\n", args[1]->fst); retbool = false; break;}
+			if(quicfptr == NULL){ i8 nrs[3] = -1; break;} i8 nrs[3] = 0;
 			fseek(quicfptr, integer(nrs[2], globalType), SEEK_SET); fwrite(args[0]->base, 1, args[0]->len, quicfptr);
 			fclose(quicfptr); break;
 // flen
 		case flen:
 			quicfptr = fopen((char*)(args[1]->fst), "r");
-			if(quicfptr == NULL){ printf("\aCould not read the length of file '%s'.\n", args[1]->fst); retbool = false; break;}
+			if(quicfptr == NULL){ i8 nrs[2] = -1; break;} i8 nrs[2] = 0;
 			fseek(quicfptr, 0, SEEK_END);
 			dummy = ftell(quicfptr);
 			switch(globalType){
@@ -396,6 +411,19 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 				case F64: f64 nrs[0] = (double) dummy; break;
 			}
 			fclose(quicfptr); break;
+
+// time
+		case timei:
+			dummy = (uint64_t) time(&thetime);
+			switch(globalType){
+				case Chr...U8: u8 nrs[0] = (uint8_t) dummy; break;
+				case I16: case U16: u16 nrs[0] = (uint16_t) dummy; break;
+				case I32: case U32: u32 nrs[0] = (uint32_t) dummy; break;
+				case I64: case U64: u64 nrs[0] = (uint64_t) dummy; break;
+				case F32: f32 nrs[0] = (float) dummy; break;
+				case F64: f64 nrs[0] = (double) dummy; break;
+			}			
+			break;
 	}
 	return retbool;
 }

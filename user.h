@@ -36,7 +36,36 @@ bool checkkinds(signed char ins, char* kinds, file_t* file){
 	return false;
 }
 
-typedef struct LABELstuff {
+typedef struct {
+	uint32_t bindam;
+	char** binds;
+	char** resos;
+} bind_t;
+
+bind_t* bindo(file_t* file, char* input, int* readhead, bind_t* binds){
+	SkipSpaces(UserInput, userInputLen, readhead);
+	if(input[*readhead] < 'A' || input[*readhead] > 'Z'){
+		error("\aBindings must start with a capital letter.\n", *readhead, file);
+		return NULL;
+	}
+	int i = *readhead;
+	while(IsAlph(input + i) || IsNr(input + i) || input[i] == '_')
+		i++;
+	binds->bindam++;
+	binds->binds = realloc(binds->binds, sizeof(char*[binds->bindam]));
+	binds->binds[binds->bindam-1] = malloc(i - *readhead + 1);
+	memcpy(binds->binds[binds->bindam-1], input + *readhead, i - *readhead);
+	binds->binds[binds->bindam-1][i - *readhead] = '\0';
+
+	
+	return binds;
+}
+
+bind_t* insertbind(file_t* file, int* readhead, bind_t* binds){
+	
+}
+
+typedef struct {
 	uint32_t labelam;
 	uint64_t* labelpos_s;
 	char** definedlabels;
@@ -58,7 +87,7 @@ lbl_t* savelabel(file_t* file, char* input, int* readhead, lbl_t* labels){
 		i++;
 	if(i - *readhead == 0){
 		labels->definedlabels[labels->labelam-1] = malloc(1);
-		error("\aLabel can not be 0 characters long, allowed characters are: a-zA-Z0-9_-\n", i, file);
+		error("\aLabel can not be 0 characters long, allowed characters are: a-z, A-Z, 0-9, _ and -.\n", i, file);
 		return NULL;
 	}
 //	printf("copy it\n");

@@ -9,34 +9,42 @@
 
 // ######################################################################################## instructions
 char instructionString[][maxKeywordLen] = {
-	"alloc", "free", "push", "pop", "flip", "unf",
-	"mov", "set", "mcpy", "rsz",
-	"inc", "dec", "add", "sub", "mul", "div", "mod",
-	"cmp", "equ",
-	"input", "printd", "print", "lib",
-	"fread", "fwrite", "flen", "ex",
-	"Ce", "Cs", "Cg", "Cn", "jmp", "call", "ret",
+	"alloc", "free", "push", "pop", "flip", "unf", // 1
+	"staptr", "cdxptr", // 2 
+	"mov", "set", "mcpy", "rsz", // 3
+	"inc", "dec", "add", "sub", "mul", "div", "mod", // 4
+	"cmp", "equ", // 5
+	"input", "printd", "print", "lib", // 6
+	"fread", "fwrite", "flen", "time", // 7
+	"ex", // 8
+	"Ce", "Cs", "Cg", "Cn", "jmp", "call", "ret", // 9
+	"bind", // 10
 	"\0end"
 };
 
 enum instructionEnum {
-	allocst, freest, push, pop, flip, unf,
-	mov, set, mcpy, rsz,
-	inc, dec, add, sub, mul, divi, modu,
-	cmp, equ,
-	input, printd, print, lib,
-	firead, fiwrite, flen, ex,
-	Ce, Cs, Cg, Cn, jmp, call, ret,
+	allocst, freest, push, pop, flip, unf, // 1
+	staptr, cdxptr, // 2
+	mov, set, mcpy, rsz, // 3
+	inc, dec, add, sub, mul, divi, modu, // 4
+	cmp, equ, // 5
+	input, printd, print, lib, // 6
+	firead, fiwrite, flen, timei, // 7
+	ex, // 8
+	Ce, Cs, Cg, Cn, jmp, call, ret, // 9
+	bind, // 10
 	final
 };
 
 char instructionKinds[][argumentAmount+1] = {
-	"d___", "d___", "p___", "p___", "d___", "d___",
-	"pp__", "dd__", "ppd_", "pd__",
-	"d___", "d___", "ddd_", "ddd_", "ddd_", "ddd_", "ddd_",
-	"dd__", "pp__",
-	"ppd_", "dd__", "pd__", "pppp",
-	"ppd_", "ppdd", "dp__", "d___"
+	"d___", "d___", "p___", "p___", "d___", "d___", // 1
+	"d___", "d___", // 2
+	"pp__", "dd__", "ppd_", "pd__", // 3
+	"d___", "d___", "ddd_", "ddd_", "ddd_", "ddd_", "ddd_", // 4
+	"dd__", "pp__", // 5
+	"ppd_", "dd__", "pd__", "pppp", // 6
+	"ppdd", "ppdd", "dpd_", "d___", // 7
+	"d___" // 8
 };
 
 char operationString[] = {
@@ -86,6 +94,7 @@ bool stalloc(int64_t amount){
 		stack[i] = malloc(sizeof(nry_t));
 //		printf("stackelptr: %lx\n", (uint64_t) stack[i]);
 		makenry(stack[i], 8);
+		memset(stack[i]->base, 0, 8);
 	}
 	return true;
 }

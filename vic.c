@@ -10,15 +10,16 @@ char* arrapp(char* des, uint64_t deslen, char* src, uint64_t srclen){
 	return des;
 }
 
-char* buildargs(int* readhead, file_t* sourcefile, char ins){
+char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
+//	printf("buildargs\n");
 	char* section = malloc(2);
 	u16 section = 2;
-	SkipSpaces(UserInput, userInputLen, readhead);
-	if(EndLine(UserInput + *readhead)) return section;
 	nry_t dnry; makenry(&dnry, 8);
 	signed char commaam = 0;
 	char kinds[2] = {'_', '_'};
-	char argkinds[argumentAmount] = "____";
+	char argkinds[argumentAmount + 1] = "____\0";
+	SkipSpaces(UserInput, userInputLen, readhead);
+	if(EndLine(UserInput + *readhead)) goto end;
 	do{
 		switch(UserInput[*readhead]){
 			case '$':
@@ -112,7 +113,7 @@ char* buildargs(int* readhead, file_t* sourcefile, char ins){
 					goto endonerror;
 				}
 				kinds[0] = 'd';
-				break;				
+				break;
 			case '~':
 //				printf("op is ~ %x\n", opLength);
 				dummy = opSwap;
@@ -197,12 +198,16 @@ char* buildargs(int* readhead, file_t* sourcefile, char ins){
 				(*readhead)--;
 				kinds[1] = kinds[0]; kinds[0] = 'd';
 				break;
+			case 'A'...'Z':
+				insertbind(sourcefile, readhead, bindings);
+				break;
 		}
 		if(EndLine(UserInput + *readhead)) break;
 //		printf("char: %c at %d\n", UserInput[*readhead], *readhead);
 		(*readhead)++;
 	} while(*readhead < userInputLen);
 	argkinds[commaam] = kinds[0];
+	end:
 	if(!checkkinds((signed char)ins, argkinds, sourcefile))
 		goto endonerror;
 	freenry(&dnry);
@@ -221,6 +226,7 @@ bool compile(file_t* sourcefile, file_t* runfile){
 	globalType = STANDARDtype;
 
 	lbl_t labeling = {0, NULL, NULL, 0, NULL, NULL};
+	bind_t bindings = {0, NULL, NULL};
 	compwhile:
 		readhead = 0; ins = -1;
 /*get input*/
@@ -259,11 +265,15 @@ bool compile(file_t* sourcefile, file_t* runfile){
 		}
 		readhead++;
 /*writing ins*/
+		if(inssection%2 == 0 && ins == bind){
+			if(bindo(runfile, UserInput, &readhead, &bindings) == NULL) goto endonerror;
+			goto figins;//loop
+		}
 		inssection += ins*2; previns = inssection;
 		mfapp(runfile, &inssection, 1);
 		if(inssection%2 == 1) goto figins;//loop
-		if(inssection%2 == 0 && ins >= jmp && ins <= ret) globalType = STANDARDtype;
-		if(inssection == jmp*2 || inssection == call*2){
+		if(ins == jmp || ins == call){
+			if(ins == call) globalType = STANDARDtype;
 			SkipSpaces(UserInput, userInputLen, &readhead);
 			if(savejmp(runfile, UserInput, &readhead, &labeling) == NULL)
 				goto endonerror;
@@ -271,11 +281,12 @@ bool compile(file_t* sourcefile, file_t* runfile){
 			dummy = 0;
 			mfapp(runfile, (char*) &dummy, 8);
 			goto compwhile;
-		} else if(inssection%2 == 0 && ins >= Ce && ins <= Cn){
+		} else if(ins >= Ce && ins <= Cn){
 			goto figins;
-		} 
+		} else if(ins == ret)
+			goto compwhile;
 /*args*/
-		argsection = buildargs(&readhead, sourcefile, inssection/2);
+		argsection = buildargs(&readhead, sourcefile, &bindings, inssection/2);
 		if(argsection == NULL) goto endonerror;//end
 		mfapp(runfile, argsection, u16 argsection);
 		free(argsection); argsection = NULL;
@@ -324,13 +335,14 @@ bool run(file_t* runfile){
 				skip: if(runfile->pos < runfile->len){
 					head = runfile->mfp[runfile->pos]/2;
 					if(head == call || head == jmp) runfile->pos += 9;
+					else if(head == ret) runfile->pos += 1;
 					else runfile->pos += (u16 (runfile->mfp + runfile->pos + 1)) + 1;
 				} break;
 			case call:
 				i64 callnr.base = stackFrameOffset;
 				u64 (callnr.base + 8) = runfile->pos + 8;
 				pushtost(&callnr); Flip();
-				stackFrameOffset = stackPtr;
+				stackFrameOffset = stackPtr + 1;
 //				printf("call, stackFrameOffset: x%lx, runfile->pos: %lx\n", stackFrameOffset, runfile->pos);
 			case jmp:
 				runfile->pos = u64 (runfile->mfp + runfile->pos);
@@ -392,13 +404,14 @@ int main(int argc, char** argv){
 	file_t runfile = {0, 0, NULL};
 	sta.te = SOURCE_IN | RUN;
 	nry_t stackarg = *makenry(&stackarg, 8);
+	int desf = -1;
 	for(int i = 1; i < argc; i++){
 		if(sta.t.stackargs)
 			pushtost(strcpytonry(&stackarg, argv[i]));
 		else if(argv[i][0] == '-') switch (argv[i][1]){
-			case 'b': sta.te = BINARY_IN | RUN; break;
-			case 'r': sta.te |= RUN; break;
+			case 'r': sta.te = BINARY_IN | RUN; break;
 			case 'c': sta.te = SOURCE_IN | BINARY_OUT; break;
+			case 'o': sta.te |= BINARY_OUT; desf = 0; break;
 			case 'e': sta.te = SOURCE_IN; break;
 			default: printf("%s\n", argv[i]); break;
 		} else if(sta.t.source_in){
@@ -413,8 +426,9 @@ int main(int argc, char** argv){
 			runfile = *quicmfptr;
 			sta.te |= STACKARGS;
 			initmac();
-		} else if(sta.t.binary_out){
-			//savestring;
+		} else if(sta.t.binary_out && desf == 0){
+			desf = i;
+			printf("A\n");
 		}
 	}
 	freenry(&stackarg);
@@ -424,7 +438,8 @@ int main(int argc, char** argv){
 	mfclose(&sourcefile);
 	if(sta.t.binary_out){
 		printf("filelen: %ld\n", runfile.len);
-		quicfptr = fopen("out.vco", "wb");
+		if(desf > 0) quicfptr = fopen(argv[desf], "wb");
+		else quicfptr = fopen("out.vco", "wb");
 		fwrite(runfile.mfp, 1, runfile.len, quicfptr);
 		fclose(quicfptr);
 	}

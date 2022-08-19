@@ -1,0 +1,33 @@
+#!/bin/vic
+call argus
+chr Ce print "\aNo arguments given.", 0
+	Ce jmp END
+
+call load
+	Ce jmp END
+
+staptr 0$!
+chr print 0$!$, 1
+
+jmp END
+
+:argus
+	alloc 1
+	staptr 0$!
+	cmp 0$!, 0
+	free 1
+	ret
+
+:load
+	alloc 2
+	flen 0$!, -1$, 1$!
+	i8 cmp 1$!, -1;
+		Ce free 2;
+		chr Ce print "\aGiven file does not exist", 0;
+		Ce ret
+	i32
+	fread 0$, -1$, 0, 0
+	free 1
+	ret
+
+:END

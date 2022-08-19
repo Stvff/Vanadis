@@ -38,6 +38,18 @@ uint64_t integer(uint8_t* ptr, int type){
 	return 0;
 }
 
+int64_t sinteger(uint8_t* ptr, int type){
+	switch(type){
+		case Chr...U8: return i8 ptr; break;
+		case I16: case U16: return i16 ptr; break;
+		case I32: case U32: return i32 ptr; break;
+		case I64: case U64: return i64 ptr; break;
+		case F32: return (int64_t) f32 ptr; break;
+		case F64: return (int64_t) f64 ptr; break;
+	}
+	return 0;
+}
+
 // ######################################################################################## nry stuff
 typedef struct {
 	uint8_t* base;
