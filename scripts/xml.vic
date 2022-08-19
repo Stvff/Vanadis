@@ -1,15 +1,20 @@
 #!/bin/vic
+:START
 call argus
-chr Ce print "\aNo arguments given.", 0
 	Ce jmp END
 
 call load
-	Ce jmp END
+	Ce jmp skip
 
-staptr 0$!
-chr print 0$!$, 1
+call printtop
+free 1
+:skip
+free 1
+jmp START
 
-jmp END
+:printtop
+	chr print -1$, 1
+	ret
 
 :argus
 	alloc 1
@@ -21,9 +26,10 @@ jmp END
 :load
 	alloc 2
 	flen 0$!, -1$, 1$!
-	i8 cmp 1$!, -1;
-		Ce free 2;
-		chr Ce print "\aGiven file does not exist", 0;
+	i8 cmp 1$!, -1
+		Ce free 2
+		chr Ce print "The following file does not exist: ", 1
+		Ce print -1$, 0
 		Ce ret
 	i32
 	fread 0$, -1$, 0, 0
