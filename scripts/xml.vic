@@ -1,39 +1,39 @@
 #!/bin/vic
 :START
-call argus
+call argumentcheck
 	Ce jmp END
-
 call load
-	Ce jmp skip
+	Ce jmp END
+chr print 0$, 1
 
-call printtop
-free 1
-:skip
-free 1
-jmp START
+jmp END
 
-:printtop
-	chr print -1$, 1
-	ret
 
-:argus
+:argumentcheck
 	alloc 1
 	staptr 0$!
 	cmp 0$!, 0
+	chr Ce print "Not enough arguments.", 0
+		Ce jmp argumentcheckend
+	cmp 0$!, 1
+		Ce cmp 0, 1
+	chr Cg print "Too many arguments.", 0
+		Cg cmp 0, 0
+		Ce jmp argumentcheckend
+	:argumentcheckend
 	free 1
 	ret
 
-:load
-	alloc 2
-	flen 0$!, -1$, 1$!
-	i8 cmp 1$!, -1
+:load # mst:( filename ' -- file )
+	u8 alloc 2
+	i32 flen 0$!, -1$, 1$!
+	i8 cmp 1$!, -1 # check if file exists
 		Ce free 2
-		chr Ce print "The following file does not exist: ", 1
+		chr Ce print "This file can not be opened: ", 1
 		Ce print -1$, 0
 		Ce ret
-	i32
-	fread 0$, -1$, 0, 0
-	free 1
+	i32 fread 0$, -1$, 0, 0
+	u8 free 1; flip 1; free 1; unf 1 # mst:( filename 'file errorcheck -- 'file )
 	ret
 
 :END

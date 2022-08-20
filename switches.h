@@ -12,20 +12,14 @@ bool libraryfunctionexposedtoVanadis(nry_t** args){
 
 // ######################################################################################## execs
 
-typedef struct{
-	char freu[argumentAmount];
-	bool err;
-} rrr;
-
-rrr evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs){
-	rrr ret = {"----", true};
+bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* ALLp, uint64_t* ALLd){
+	bool ret = true;
 	uint16_t val = 0;
 	nry_t* regp[2] = {NULL, NULL};
 	uint8_t* regd[2] = {NULL, NULL};
-	nry_t* allp[2] = {malloc(sizeof(nry_t)), malloc(sizeof(nry_t))}; allp[0]->base = NULL; allp[1]->base = NULL;
-	uint8_t* alld[2] = {malloc(sizeof(uint64_t)), malloc(sizeof(uint64_t))}; u64 alld[0] = 0; u64 alld[1] = 0;
+	nry_t* allp[2] = {&ALLp[0], &ALLp[1]};
+	uint8_t* alld[2] = {(uint8_t*)&ALLd[0], (uint8_t*)&ALLd[1]};
 //	printf("ap: %lx, %lx\nad: %lx, %lx\n", (uint64_t) allp[0], (uint64_t) allp[1], (uint64_t) alld[0], (uint64_t) alld[1]);
-	uint8_t anr = 0;
 	uint8_t argnr = 0;
 //	printf("Solving expression now\n");
 //	printf("exprlen: x%x\n", exprlen);
@@ -41,7 +35,7 @@ rrr evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs){
 					printf("\aInvalid stack reference.\n");
 					printf("stackPtr was %ld, stackFrameOffset was %ld, stack reference was %ld,\n", stackPtr, stackFrameOffset, sinteger(regd[0], globalType));
 					printf("resulting in attempted read at %ld.\n", (int64_t) dummy);
-					ret.err = false; break;
+					ret = false; break;
 				}
 				regp[0] = stack[dummy];
 				regd[0] = NULL;
@@ -106,33 +100,12 @@ rrr evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs){
 				break;
 // comma
 			case opComma:
-				anr = regp[0]==allp[0]?0:(regp[0]==allp[1]?1:2);
-				if(anr != 2){
-					freenry(allp[1-anr]); free(allp[1-anr]);
-					free(alld[0]);
-					free(alld[1]);
-					ret.freu[argnr] = 'p';
-				} else {
-					anr = regd[0]==alld[0]?0:(regd[0]==alld[1]?1:2);
-					if(anr != 2){
-						free(alld[1-anr]);
-						freenry(allp[0]); free(allp[0]);
-						freenry(allp[1]); free(allp[1]);
-						ret.freu[argnr] = 'd';
-					} else {
-						freenry(allp[0]); free(allp[0]);
-						freenry(allp[1]); free(allp[1]);
-						free(alld[0]);
-						free(alld[1]);
-						ret.freu[argnr] = '_';
-					}
-				}
 				args[argnr] = regp[0];
 				nrs[argnr] = regd[0];
-				allp[0] = malloc(sizeof(nry_t)); allp[1] = malloc(sizeof(nry_t)); allp[0]->base = NULL; allp[1]->base = NULL;
-				alld[0] = malloc(sizeof(uint64_t)); alld[1] = malloc(sizeof(uint64_t)); u64 alld[0] = 0; u64 alld[1] = 0;
-				regp[0] = NULL; regp[1] = NULL; regd[0] = NULL; regd[1] = NULL;
 				argnr++;
+				allp[0] = &ALLp[argnr*2]; allp[1] = &ALLp[2*argnr + 1];
+				alld[0] = (uint8_t*)&ALLd[argnr*2]; alld[1] = (uint8_t*)&ALLd[2*argnr + 1];
+				regp[0] = NULL; regp[1] = NULL; regd[0] = NULL; regd[1] = NULL;
 				break;
 // nry
 			case opNry:
@@ -162,29 +135,10 @@ rrr evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs){
 				readhead += typeBylen(globalType) - 1;
 				break;
 		}
-		if(!ret.err) break;
+		if(!ret) break;
 	}
-	anr = regp[0]==allp[0]?0:(regp[0]==allp[1]?1:2);
-	if(anr != 2){
-		freenry(allp[1-anr]); free(allp[1-anr]);
-		free(alld[0]);
-		free(alld[1]);
-		ret.freu[argnr] = 'p';
-	} else {
-		anr = regd[0]==alld[0]?0:(regd[0]==alld[1]?1:2);
-		if(anr != 2){
-			free(alld[1-anr]);
-			freenry(allp[0]); free(allp[0]);
-			freenry(allp[1]); free(allp[1]);
-			ret.freu[argnr] = 'd';
-		} else {
-			freenry(allp[0]); free(allp[0]);
-			freenry(allp[1]); free(allp[1]);
-			free(alld[0]);
-			free(alld[1]);
-			ret.freu[argnr] = '_';
-		}
-	}
+	args[argnr] = regp[0];
+	nrs[argnr] = regd[0];
 	args[argnr] = regp[0];
 	nrs[argnr] = regd[0];
 //	printf("done solving expressions\n");

@@ -1,0 +1,12 @@
+u64
+alloc 3
+set 0$!, 30 000 000
+time 2$!
+:loop; u64
+	inc 1$!
+	cmp 1$!, 0$!
+	Cs jmp loop
+printd 1$!, 0
+time 1$!
+sub 1$!, 1$!, 2$!
+printd 1$!, 0

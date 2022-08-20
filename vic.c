@@ -240,10 +240,16 @@ bool compile(file_t* sourcefile, file_t* runfile){
 /*labels*/
 		if(UserInput[readhead] == ':'){
 			readhead++;
+			if(previns%2 == 0 && previns/2 >= Ce && previns/2 <= Cn){
+				error("\aLabel in a conditional statement", readhead-1, sourcefile);
+				goto endonerror;
+			}
 			if(savelabel(runfile, UserInput, &readhead, &labeling) == NULL)
 				goto endonerror;
 //			printf("label: %s, %s\n", UserInput, labeling.definedlabels[labeling.labelam-1]);
 			globalType = STANDARDtype;
+			inssection = 1 + globalType*2;
+			mfapp(runfile, &inssection, 1);
 			goto compwhile;
 		}
 /*ins*/
@@ -313,11 +319,13 @@ bool run(file_t* runfile){
 	char head;
 	bool insornot;
 	uint16_t exprlen;
-	char* expr = malloc(exprbufflen);
 	nry_t callnr; makenry(&callnr, 16);
 
 	nry_t* args[argumentAmount] = {0};
 	uint8_t* nrs[argumentAmount] = {0};
+
+	nry_t allp[argumentAmount*2] = {0};
+	uint64_t alld[argumentAmount*2] = {0};
 
 	while(runfile->pos < runfile->len && retbool){
 		head = runfile->mfp[runfile->pos];
@@ -345,8 +353,8 @@ bool run(file_t* runfile){
 				stackFrameOffset = stackPtr + 1;
 //				printf("call, stackFrameOffset: x%lx, runfile->pos: %lx\n", stackFrameOffset, runfile->pos);
 			case jmp:
-				runfile->pos = u64 (runfile->mfp + runfile->pos);
 				globalType = STANDARDtype;
+				runfile->pos = u64 (runfile->mfp + runfile->pos);
 //				printf("jmp, runfile->pos: x%lx\n", runfile->pos);
 				break;
 			case ret:
@@ -360,28 +368,20 @@ bool run(file_t* runfile){
 			default:
 //				printf("default, ins: %s, x%x (multiplied by 2 in bin)\n", instructionString[(signed char)head], head);
 				exprlen = u16 (runfile->mfp + runfile->pos);
-				if(exprlen > exprbufflen) expr = realloc(expr, exprlen);
-				memcpy(expr, runfile->mfp + runfile->pos, exprlen);
 //				printf("expressiontime:\n");
-				rrr res = evalexpr(expr, exprlen, args, nrs);
-				if(!res.err){retbool = false; break;}
+				if(!evalexpr(runfile->mfp + runfile->pos, exprlen, args, nrs, allp, alld)){retbool = false; break;}
 //				printf("executiontime\nP0: %lx, P1: %lx, P2: %lx, P3: %lx\nD0: %lx, D1: %lx, D2: %lx, D3: %lx\n",
 //					(uint64_t) args[0], (uint64_t) args[1], (uint64_t) args[2], (uint64_t) args[3],
 //					(uint64_t) nrs[0], (uint64_t) nrs[1], (uint64_t) nrs[2], (uint64_t) nrs[3]);
 				if(!execute(head, args, nrs)){retbool = false; break;}
-				for(signed char i = 0; i < argumentAmount; i++){
-//					printf("free the kind %c\n", res.freu[i]);
-					if(res.freu[i] == 'p'){ freenry(args[i]); free(args[i]);}
-					if(res.freu[i] == 'd') free(nrs[i]);
-				}
-				if(exprlen > exprbufflen) expr = realloc(expr, exprbufflen);
 				runfile->pos += exprlen;
 				break;
 		}
 //		printf("pos x%lx\n", runfile->pos);
 	}
 	freenry(&callnr);
-	free(expr);
+	for(int i = 0; i < argumentAmount*2; i++)
+		freenry(&allp[i]);
 	return retbool;
 }
 

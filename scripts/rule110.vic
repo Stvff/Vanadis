@@ -1,0 +1,59 @@
+#!/bin/vic
+jmp MAIN
+
+:init; u8 alloc 2
+	rsz 0$, 79
+	sub 1$!, 0$.l, 1
+	set 0$[1$!], 1
+	free 1
+	ret
+
+:iter; u8 alloc 2
+	mov 0$, -1$[0]*~
+	rsz 1$, 3
+	sub 1$[2], 0$.l, 2
+	jmp itercon
+	:iterfor; u8
+		add 1$[0], -1$<1>, -1$<2>
+		mul 1$[1], -1$<1>, -1$<2>
+		sub 1$[0], 1$[0], 1$[1]
+		mul 1$[1], -1$<0>, 1$[1]
+		sub 1$[1], 1, 1$[1]
+		mul 0$<1>, 1$[0], 1$[1]
+		ex -1$<1>* 0$<1>*
+		:itercon; u8
+#q		printd 0$.o, 0
+		cmp 0$.o, 1$[2]
+			Cs jmp iterfor
+	free 1
+	pop -1$
+	ret
+# a b c, (1-abc)(b+c-bc)
+# d = b + c
+# e = bc
+# d = d - e
+# e = ae
+# e = 1 - e
+# d = ed
+# a:0 -- b:1 -- c:2
+# d:0 -- e:1 -- l:2
+:prin; u8
+	ex -1$[0]*
+#	print -1$, 0
+	:prinloop; chr
+		cmp -1$<0>, 0
+		Cn print "# ", 1
+		Ce print "  ", 1
+		cmp -1$<1>*~.o, 0
+			Cn jmp prinloop
+	print "\n", 1
+	ret
+
+:MAIN
+call init
+call prin
+:loop
+	call iter
+	call prin
+	u8 cmp 0$[1], 1
+		Cn jmp loop
