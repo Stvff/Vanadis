@@ -244,10 +244,21 @@ bool compile(file_t* sourcefile, file_t* runfile){
 				error("\aLabel in a conditional statement", readhead-1, sourcefile);
 				goto endonerror;
 			}
-			if(savelabel(runfile, UserInput, &readhead, &labeling) == NULL)
+			if(savelabel(runfile, UserInput, &readhead, &labeling, sourcefile) == NULL)
 				goto endonerror;
 //			printf("label: %s, %s\n", UserInput, labeling.definedlabels[labeling.labelam-1]);
-			globalType = STANDARDtype;
+//			printf("%c\n", UserInput[readhead]);
+			while(UserInput[readhead] != ',' && !EndLine(UserInput + readhead)) readhead++;
+			if(UserInput[readhead] == ','){
+				readhead++;
+				SkipSpaces(UserInput, userInputLen, &readhead);
+				ins = keywordlook(UserInput, 4, typeString, &readhead);
+				if(ins == -1){
+					error("\aInvalid type", readhead, sourcefile);
+					goto endonerror;//end
+				}
+				globalType = ins;
+			} else globalType = STANDARDtype;
 			inssection = 1 + globalType*2;
 			mfapp(runfile, &inssection, 1);
 			goto compwhile;
@@ -281,7 +292,7 @@ bool compile(file_t* sourcefile, file_t* runfile){
 		if(ins == jmp || ins == call){
 			if(ins == call) globalType = STANDARDtype;
 			SkipSpaces(UserInput, userInputLen, &readhead);
-			if(savejmp(runfile, UserInput, &readhead, &labeling) == NULL)
+			if(savejmp(runfile, UserInput, &readhead, &labeling, sourcefile) == NULL)
 				goto endonerror;
 //			printf("jump: %s, %s\n", UserInput, labeling.definedlabels[labeling.labelam-1]);
 			dummy = 0;
@@ -343,7 +354,7 @@ bool run(file_t* runfile){
 				skip: if(runfile->pos < runfile->len){
 					head = runfile->mfp[runfile->pos]/2;
 					if(head == call || head == jmp) runfile->pos += 9;
-					else if(head == ret) runfile->pos += 1;
+					else if(head == ret){ runfile->pos += 1; globalType = STANDARDtype;}
 					else runfile->pos += (u16 (runfile->mfp + runfile->pos + 1)) + 1;
 				} break;
 			case call:
@@ -353,7 +364,7 @@ bool run(file_t* runfile){
 				stackFrameOffset = stackPtr + 1;
 //				printf("call, stackFrameOffset: x%lx, runfile->pos: %lx\n", stackFrameOffset, runfile->pos);
 			case jmp:
-				globalType = STANDARDtype;
+//				globalType = STANDARDtype;
 				runfile->pos = u64 (runfile->mfp + runfile->pos);
 //				printf("jmp, runfile->pos: x%lx\n", runfile->pos);
 				break;

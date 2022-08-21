@@ -3,8 +3,7 @@ u64
 mov 0$, % 0 + 1;
 chr print "How many iterations?\n> ", 1
 u64 input 2$, 0^, 0;
-:loop
-	u64
+:loop, u64
 	add 1$!, 0$l, 1t
 	rsz 0$, 1$!
 	add <0$ 2t>, <0$ 0>, <0$ 1t>*

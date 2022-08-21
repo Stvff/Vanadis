@@ -74,7 +74,7 @@ typedef struct {
 	char** requiredlabels;
 } lbl_t;
 
-lbl_t* savelabel(file_t* file, char* input, int* readhead, lbl_t* labels){
+lbl_t* savelabel(file_t* file, char* input, int* readhead, lbl_t* labels, file_t* src){
 //	printf("saving label\n");
 	labels->labelam++;
 	labels->labelpos_s = realloc(labels->labelpos_s, sizeof(uint64_t[labels->labelam]));
@@ -87,7 +87,7 @@ lbl_t* savelabel(file_t* file, char* input, int* readhead, lbl_t* labels){
 		i++;
 	if(i - *readhead == 0){
 		labels->definedlabels[labels->labelam-1] = malloc(1);
-		error("\aLabel can not be 0 characters long, allowed characters are: a-z, A-Z, 0-9, _ and -.\n", i, file);
+		error("\aLabel can not be 0 characters long, allowed characters are: a-z, A-Z, 0-9, _ and -.\n", i, src);
 		return NULL;
 	}
 //	printf("copy it\n");
@@ -99,7 +99,7 @@ lbl_t* savelabel(file_t* file, char* input, int* readhead, lbl_t* labels){
 	return labels;
 }
 
-lbl_t* savejmp(file_t* file, char* input, int* readhead, lbl_t* labels){
+lbl_t* savejmp(file_t* file, char* input, int* readhead, lbl_t* labels, file_t* src){
 //	printf("saving jump\n");
 	labels->jumpam++;
 	labels->jumppos_s = realloc(labels->jumppos_s, sizeof(char*[labels->jumpam+1]));
@@ -112,7 +112,7 @@ lbl_t* savejmp(file_t* file, char* input, int* readhead, lbl_t* labels){
 		i++;
 	if(i - *readhead == 0){
 		labels->requiredlabels[labels->jumpam-1] = malloc(1);
-		error("\aLabel can not be 0 characters long, allowed characters are: a-zA-Z0-9_-\n", i, file);
+		error("\aLabel can not be 0 characters long, allowed characters are: a-zA-Z0-9_-\n", i, src);
 		return NULL;
 	}
 //	printf("copy it\n");
