@@ -199,7 +199,8 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 				kinds[1] = kinds[0]; kinds[0] = 'd';
 				break;
 			case 'A'...'Z':
-				insertbind(sourcefile, readhead, bindings);
+//				printf("%c\n", UserInput[*readhead]);
+				if(insertbind(sourcefile, readhead, bindings) == NULL) goto endonerror;
 				break;
 		}
 		if(EndLine(UserInput + *readhead)) break;
@@ -211,6 +212,7 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 	if(!checkkinds((signed char)ins, argkinds, sourcefile))
 		goto endonerror;
 	freenry(&dnry);
+	if(userInputLen != STANDARDuserInputLen) UserInput = realloc(UserInput, STANDARDuserInputLen);
 	return section;
 	endonerror:
 	free(section);
@@ -226,7 +228,9 @@ bool compile(file_t* sourcefile, file_t* runfile){
 	globalType = STANDARDtype;
 
 	lbl_t labeling = {0, NULL, NULL, 0, NULL, NULL};
-	bind_t bindings = {0, NULL, NULL};
+	bind_t bindings = {0, malloc(sizeof(char*)), malloc(sizeof(char*))};
+	bindings.binds[0] = NULL; bindings.resos[0] = NULL;
+
 	compwhile:
 		readhead = 0; ins = -1;
 /*get input*/
@@ -283,8 +287,9 @@ bool compile(file_t* sourcefile, file_t* runfile){
 		readhead++;
 /*writing ins*/
 		if(inssection%2 == 0 && ins == bind){
-			if(bindo(runfile, UserInput, &readhead, &bindings) == NULL) goto endonerror;
-			goto figins;//loop
+			if(bindo(runfile, readhead, &bindings) == NULL) goto endonerror;
+//			printf("Binding: %s\n", bindings.binds[bindings.bindam-1]);
+			goto compwhile;//loop
 		}
 		inssection += ins*2; previns = inssection;
 		mfapp(runfile, &inssection, 1);
@@ -315,9 +320,11 @@ bool compile(file_t* sourcefile, file_t* runfile){
 
 	free(UserInput);
 	freelabels(&labeling);
+	freebinds(&bindings);
 	return true;
 	endonerror:
 	free(UserInput);
+	freebinds(&bindings);
 	freelabels(&labeling);
 	return false;
 }

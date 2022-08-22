@@ -24,7 +24,9 @@ rules:
 #    - symbol.operator: "[\\<]"
 #    - symbol.operator: "[*]"
 #    - symbol.operator: "[>lot~,%]"
-    - symbol.operator: "[;]"
+    - symbol.operator: "[;,]"
+    - preproc: "\\b(?i)(let|=)(?-i)\\b"
+    - preproc: "[=]"
 
       ## Types
     - type: "\\b(?i)(chr|i8|u8)(?-i)\\b"

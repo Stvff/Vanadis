@@ -1,1 +1,5 @@
 chr print "God's in his heaven-- / All's right with the world.", 0
+alloc 2
+let Abc = 0$[0]
+set Abc, 33
+printd Abc, 0

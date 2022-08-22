@@ -7,7 +7,7 @@ void error(char* errormessage, int readhead, file_t* file){
 	int newlines = 0;
 	for(uint64_t i = 0; i < file->pos; i++)
 		if(file->mfp[i] == '\n') newlines++;
-	printf("%s at the %dth char:\n", errormessage, readhead);
+	printf("%s at the %dth char:\n", errormessage, readhead + 1);
 	int skip = printf(" %d|", newlines);
 	printf("%s\n", UserInput);
 	for(int i = 0; i < readhead + skip - 1; i++)
@@ -42,27 +42,85 @@ typedef struct {
 	char** resos;
 } bind_t;
 
-bind_t* bindo(file_t* file, char* input, int* readhead, bind_t* binds){
-	SkipSpaces(UserInput, userInputLen, readhead);
-	if(input[*readhead] < 'A' || input[*readhead] > 'Z'){
-		error("\aBindings must start with a capital letter.\n", *readhead, file);
+bind_t* bindo(file_t* file, int i, bind_t* binds){
+	SkipSpaces(UserInput, userInputLen, &i);
+	if(UserInput[i] < 'A' || UserInput[i] > 'Z'){
+		error("\aBindings must start with a capital letter.\n", i, file);
 		return NULL;
 	}
-	int i = *readhead;
-	while(IsAlph(input + i) || IsNr(input + i) || input[i] == '_')
+	int begin = i;
+	while(IsAlph(UserInput + i) || IsNr(UserInput + i) || UserInput[i] == '_')
 		i++;
 	binds->bindam++;
-	binds->binds = realloc(binds->binds, sizeof(char*[binds->bindam]));
-	binds->binds[binds->bindam-1] = malloc(i - *readhead + 1);
-	memcpy(binds->binds[binds->bindam-1], input + *readhead, i - *readhead);
-	binds->binds[binds->bindam-1][i - *readhead] = '\0';
+	binds->binds = realloc(binds->binds, sizeof(char*[binds->bindam + 1]));
+	binds->binds[binds->bindam-1] = realloc(binds->binds[binds->bindam-1], i - begin + 1);
+	binds->binds[binds->bindam] = malloc(1);
 
-	
+	memcpy(binds->binds[binds->bindam-1], UserInput + begin, i - begin);
+	binds->binds[binds->bindam-1][i - begin] = '\0';
+	binds->binds[binds->bindam][0] = '\0';
+
+	binds->resos = realloc(binds->resos, sizeof(char*[binds->bindam + 1])); // allocating this one before any errors can take place
+	free(binds->resos[binds->bindam-1]);
+	binds->resos[binds->bindam-1] = NULL;
+	binds->resos[binds->bindam] = malloc(1);
+	binds->resos[binds->bindam][0] = '\0';
+
+	while(UserInput[i] != '=' && !EndLine(UserInput + i)) i++;
+	if(UserInput[i] != '='){
+		error("\aTo assign a binding, use '='", i, file);
+		return NULL;
+	}
+	i++;
+	SkipSpaces(UserInput, userInputLen, &i);
+	if(EndLine(UserInput + i)){
+		error("\aNo binding", i, file);
+		return NULL;
+	}
+	begin = i;
+	while(!EndLine(UserInput + i)) i++;
+	binds->resos[binds->bindam-1] = malloc(i - begin + 1);
+	memcpy(binds->resos[binds->bindam-1], UserInput + begin, i - begin);
+	binds->resos[binds->bindam-1][i - begin] = '\0';
+
+	i = begin;
+	if(UserInput[i] >= 'A' && UserInput[i] <= 'Z')
+		if(labellook(UserInput + i, binds->binds) == -1){
+			error("\aUndefined binding", i, file);
+			return NULL;
+	}
 	return binds;
 }
 
 bind_t* insertbind(file_t* file, int* readhead, bind_t* binds){
-	
+	int i = *readhead;
+	int bi = labellook(UserInput + i, binds->binds);
+	if(bi == -1){
+		error("\aUndefined binding", i, file);
+		return NULL;
+	}
+	int blen = strlen(binds->binds[bi]);
+	int rlen = strlen(binds->resos[bi]);
+	userInputLen = STANDARDuserInputLen + rlen - blen;
+	if(userInputLen > STANDARDuserInputLen)
+		UserInput = realloc(UserInput, userInputLen);
+	memmove(UserInput + *readhead + rlen,
+			UserInput + *readhead + blen,
+			STANDARDuserInputLen - *readhead - blen - 1);
+	if(userInputLen < STANDARDuserInputLen)
+		UserInput = realloc(UserInput, userInputLen);
+	memcpy(UserInput + *readhead, binds->resos[bi], rlen);
+	(*readhead)--;
+	return binds;
+}
+
+void freebinds(bind_t* binds){
+	for(unsigned int i = 0; i < binds->bindam + 1; i++){
+		free(binds->binds[i]);
+		free(binds->resos[i]);
+	}
+	free(binds->binds);
+	free(binds->resos);
 }
 
 typedef struct {

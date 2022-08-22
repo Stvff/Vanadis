@@ -1,14 +1,17 @@
 u8 alloc 3
 u64
-mov 0$, % 0 + 1;
+let Fibseq = 0$
+let Iterations = 2$[0]
+let Newsize = 1$!
+mov Fibseq, % 0 + 1;
 chr print "How many iterations?\n> ", 1
-u64 input 2$, 0^, 0;
+u64 input Iterations~, 0^, 0;
 :loop, u64
-	add 1$!, 0$l, 1t
-	rsz 0$, 1$!
-	add <0$ 2t>, <0$ 0>, <0$ 1t>*
-	dec 2$!
-	cmp 2$!, 0
+	add Newsize, Fibseq.l, 1t
+	rsz Fibseq, Newsize
+	add Fibseq<2t>, Fibseq<0>, Fibseq<1t>*
+	dec Iterations
+	cmp Iterations, 0
 	Cg jmp loop
-u64 print 0$, 0
+u64 print Fibseq, 0
 free 3

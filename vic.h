@@ -3,7 +3,7 @@
 #include "nry.h"
 #include "iostr.h"
 
-#define userInputLen 512
+#define STANDARDuserInputLen 512
 #define maxKeywordLen 16
 #define argumentAmount 4
 
@@ -18,7 +18,7 @@ char instructionString[][maxKeywordLen] = {
 	"fread", "fwrite", "flen", "time", // 7
 	"ex", // 8
 	"Ce", "Cs", "Cg", "Cn", "jmp", "call", "ret", // 9
-	"bind", // 10
+	"let", // 10
 	"\0end"
 };
 
@@ -73,6 +73,7 @@ int64_t stackFrameOffset;
 
 time_t thetime;
 char* UserInput;
+int userInputLen = STANDARDuserInputLen;
 uint64_t dummy;
 uint64_t silly;
 uint64_t giddy;
