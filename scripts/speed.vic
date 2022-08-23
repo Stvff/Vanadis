@@ -1,12 +1,15 @@
+let Limit = 0$!; let Endtime = 0$!
+let Start = 2$!
+let I = 1$!
 u64
 alloc 3
-set 0$!, 300 000 000
-time 2$!
+set Limit, 300 000 000
+time Start
 :loop, u64
-	inc 1$!
-	cmp 1$!, 0$!
+	inc I
+	cmp I, Limit
 	Cs jmp loop
-printd 1$!, 0
-time 1$!
-sub 1$!, 1$!, 2$!
-printd 1$!, 0
+printd I, 0
+time Endtime
+sub Endtime, Endtime, Start
+printd Endtime, 0

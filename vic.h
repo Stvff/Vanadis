@@ -13,12 +13,13 @@ char instructionString[][maxKeywordLen] = {
 	"staptr", "cdxptr", // 2 
 	"mov", "set", "mcpy", "rsz", // 3
 	"inc", "dec", "add", "sub", "mul", "div", "mod", // 4
-	"cmp", "equ", // 5
-	"input", "printd", "print", "lib", // 6
-	"fread", "fwrite", "flen", "time", // 7
-	"ex", // 8
-	"Ce", "Cs", "Cg", "Cn", "jmp", "call", "ret", // 9
-	"let", // 10
+	"and", "or", "xor", "not", "rshf", "lshf", // 5
+	"cmp", "equ", // 6
+	"input", "printd", "print", "lib", // 7
+	"fread", "fwrite", "flen", "time", // 8
+	"ex", // 9
+	"Ce", "Cs", "Cg", "Cn", "jmp", "call", "ret", // 10
+	"let", // 12
 	"\0end"
 };
 
@@ -27,12 +28,13 @@ enum instructionEnum {
 	staptr, cdxptr, // 2
 	mov, set, mcpy, rsz, // 3
 	inc, dec, add, sub, mul, divi, modu, // 4
-	cmp, equ, // 5
-	input, printd, print, lib, // 6
-	firead, fiwrite, flen, timei, // 7
-	ex, // 8
-	Ce, Cs, Cg, Cn, jmp, call, ret, // 9
-	bind, // 10
+	and, or, xor, not, rshf, lshf, // 5
+	cmp, equ, // 6
+	input, printd, print, lib, // 7
+	firead, fiwrite, flen, timei, // 8
+	ex, // 9
+	Ce, Cs, Cg, Cn, jmp, call, ret, // 10
+	bind, // 11
 	final
 };
 
@@ -41,10 +43,11 @@ char instructionKinds[][argumentAmount+1] = {
 	"d___", "d___", // 2
 	"pp__", "dd__", "ppd_", "pd__", // 3
 	"d___", "d___", "ddd_", "ddd_", "ddd_", "ddd_", "ddd_", // 4
-	"dd__", "pp__", // 5
-	"ppd_", "dd__", "pd__", "pppp", // 6
-	"ppdd", "ppdd", "dpd_", "d___", // 7
-	"d___" // 8
+	"ddd_", "ddd_", "ddd_", "dd__", "ddd_", "ddd_", // 5
+	"dd__", "pp__", // 6
+	"ppd_", "dd__", "pd__", "pppp", // 7
+	"ppdd", "ppdd", "dpd_", "d___", // 8
+	"d___" // 9
 };
 
 char operationString[] = {

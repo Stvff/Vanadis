@@ -15,16 +15,15 @@ jmp MAIN
 	let Length = 1$[2]
 	sub Length, New.l, 2
 	jmp itercon
-	# a b c, (1-abc)(b+c-bc)
+	# a b c, !((a & b) & c) & (b | c)
 	let A = Old<0>; let B = Old<1>; let C = Old<2>
 	let Gr1 = 1$[0]; let Gr2 = 1$[1]
 	:iterfor, u8
-		add Gr1, B, C
-		mul Gr2, B, C
-		sub Gr1, Gr1, Gr2
-		mul Gr2, A, Gr2
-		sub Gr2, 1, Gr2
-		mul New<1>, Gr1, Gr2
+		or Gr1, B, C
+		and Gr2, A, B
+		and Gr2, Gr2, C
+		not Gr2, Gr2
+		and New<1>, Gr2, Gr1
 		ex Old<1>* New<1>*
 		:itercon, u8
 #		printd Old.o, 0

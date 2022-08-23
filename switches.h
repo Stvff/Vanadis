@@ -277,6 +277,61 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 			case F64: f64 nrs[0] = fmod(f64 nrs[1], f64 nrs[2]); break;
 		} break;
 
+// and
+		case and: switch(globalType){
+			case Chr...U8: u8 nrs[0] = u8 nrs[1] & u8 nrs[2]; break;
+			case I16: case U16: u16 nrs[0] = u16 nrs[1] & u16 nrs[2]; break;
+			case I32: case U32: u32 nrs[0] = u32 nrs[1] & u32 nrs[2]; break;
+			case I64: case U64: u64 nrs[0] = u64 nrs[1] & u64 nrs[2]; break;
+			case F32: f32 nrs[0] = u32 nrs[1] & u32 nrs[2]; break;
+			case F64: f64 nrs[0] = u64 nrs[1] & u64 nrs[2]; break;
+		} break;
+// or
+		case or: switch(globalType){
+			case Chr...U8: u8 nrs[0] = u8 nrs[1] | u8 nrs[2]; break;
+			case I16: case U16: u16 nrs[0] = u16 nrs[1] | u16 nrs[2]; break;
+			case I32: case U32: u32 nrs[0] = u32 nrs[1] | u32 nrs[2]; break;
+			case I64: case U64: u64 nrs[0] = u64 nrs[1] | u64 nrs[2]; break;
+			case F32: f32 nrs[0] = u32 nrs[1] | u32 nrs[2]; break;
+			case F64: f64 nrs[0] = u64 nrs[1] | u64 nrs[2]; break;
+		} break;
+// xor
+		case xor: switch(globalType){
+			case Chr...U8: u8 nrs[0] = u8 nrs[1] ^ u8 nrs[2]; break;
+			case I16: case U16: u16 nrs[0] = u16 nrs[1] ^ u16 nrs[2]; break;
+			case I32: case U32: u32 nrs[0] = u32 nrs[1] ^ u32 nrs[2]; break;
+			case I64: case U64: u64 nrs[0] = u64 nrs[1] ^ u64 nrs[2]; break;
+			case F32: f32 nrs[0] = u32 nrs[1] ^ u32 nrs[2]; break;
+			case F64: f64 nrs[0] = u64 nrs[1] ^ u64 nrs[2]; break;
+		} break;
+// not
+		case not: switch(globalType){
+			case Chr...U8: u8 nrs[0] = !u8 nrs[1]; break;
+			case I16: case U16: u16 nrs[0] = !u16 nrs[1]; break;
+			case I32: case U32: u32 nrs[0] = !u32 nrs[1]; break;
+			case I64: case U64: u64 nrs[0] = !u64 nrs[1]; break;
+			case F32: f32 nrs[0] = !u32 nrs[1]; break;
+			case F64: f64 nrs[0] = !u64 nrs[1]; break;
+		} break;
+// rshf
+		case rshf: switch(globalType){
+			case Chr...U8: u8 nrs[0] = u8 nrs[1] >> u8 nrs[2]; break;
+			case I16: case U16: u16 nrs[0] = u16 nrs[1] >> u8 nrs[2]; break;
+			case I32: case U32: u32 nrs[0] = u32 nrs[1] >> u8 nrs[2]; break;
+			case I64: case U64: u64 nrs[0] = u64 nrs[1] >> u8 nrs[2]; break;
+			case F32: f32 nrs[0] = u32 nrs[1] >> u8 nrs[2]; break;
+			case F64: f64 nrs[0] = u64 nrs[1] >> u8 nrs[2]; break;
+		} break;
+// lshf
+		case lshf: switch(globalType){
+			case Chr...U8: u8 nrs[0] = u8 nrs[1] << u8 nrs[2]; break;
+			case I16: case U16: u16 nrs[0] = u16 nrs[1] << u8 nrs[2]; break;
+			case I32: case U32: u32 nrs[0] = u32 nrs[1] << u8 nrs[2]; break;
+			case I64: case U64: u64 nrs[0] = u64 nrs[1] << u8 nrs[2]; break;
+			case F32: f32 nrs[0] = u32 nrs[1] << u8 nrs[2]; break;
+			case F64: f64 nrs[0] = u64 nrs[1] << u8 nrs[2]; break;
+		} break;
+
 // cmp
 		case cmp: if(globalType < F32){
 				if(integer(nrs[0], globalType) == integer(nrs[1], globalType)) flag = 0;
