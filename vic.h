@@ -14,11 +14,11 @@ char instructionString[][maxKeywordLen] = {
 	"mov", "set", "mcpy", "rsz", // 3
 	"inc", "dec", "add", "sub", "mul", "div", "mod", // 4
 	"and", "or", "xor", "not", "rshf", "lshf", // 5
-	"cmp", "equ", // 6
-	"input", "printd", "print", "lib", // 7
+	"gc", "sc", "gec", "sec", "ec", "cmp", "pec", // 6
+	"input", "dprint", "print", "lib", // 7
 	"fread", "fwrite", "flen", "time", // 8
 	"ex", // 9
-	"Ce", "Cs", "Cg", "Cn", "jmp", "call", "ret", // 10
+	"Ce", "Cs", "Cg", "Cse", "Cge", "Cn", "jmp", "call", "ret", // 10
 	"let", // 12
 	"\0end"
 };
@@ -29,24 +29,24 @@ enum instructionEnum {
 	mov, set, mcpy, rsz, // 3
 	inc, dec, add, sub, mul, divi, modu, // 4
 	and, or, xor, not, rshf, lshf, // 5
-	cmp, equ, // 6
-	input, printd, print, lib, // 7
+	gc, sc, gec, sec, ec, cmp, pec, // 6
+	input, dprint, print, lib, // 7
 	firead, fiwrite, flen, timei, // 8
 	ex, // 9
-	Ce, Cs, Cg, Cn, jmp, call, ret, // 10
+	Ce, Cs, Cg, Cse, Cge, Cn, jmp, call, ret, // 10
 	bind, // 11
 	final
 };
 
 char instructionKinds[][argumentAmount+1] = {
-	"d___", "d___", "p___", "p___", "d___", "d___", // 1
-	"d___", "d___", // 2
-	"pp__", "dd__", "ppd_", "pd__", // 3
-	"d___", "d___", "ddd_", "ddd_", "ddd_", "ddd_", "ddd_", // 4
-	"ddd_", "ddd_", "ddd_", "dd__", "ddd_", "ddd_", // 5
-	"dd__", "pp__", // 6
-	"ppd_", "dd__", "pd__", "pppp", // 7
-	"ppdd", "ppdd", "dpd_", "d___", // 8
+	"d___", "d___", "p___", "P___", "d___", "d___", // 1
+	"D___", "D___", // 2
+	"Pp__", "Dd__", "PPd_", "Pd__", // 3
+	"D___", "D___", "Ddd_", "Ddd_", "Ddd_", "Ddd_", "Ddd_", // 4
+	"Ddd_", "Ddd_", "Ddd_", "Dd__", "Ddd_", "Ddd_", // 5
+	"dd__", "dd__", "dd__", "dd__", "dd__", "dd__", "pp__", // 6
+	"Ppd_", "dd__", "pd__", "PPPp", // 7
+	"PpdD", "ppdD", "DpD_", "D___", // 8
 	"d___" // 9
 };
 
@@ -64,8 +64,20 @@ char typeString[][4] = {
 	"i64", "u64", "f32", "f64", "\0end"
 };
 
+enum compareEnum {
+	CE = 1, CG = 2, CS = 4,
+};
+
 // ######################################################################################## machine functions
-uint8_t flag;
+union {
+	uint8_t s;
+	struct {
+		bool e:1;
+		bool g:1;
+		bool s:1;
+	} c;
+} flag;
+
 int STANDARDtype = I32;
 int globalType;
 nry_t** stack;

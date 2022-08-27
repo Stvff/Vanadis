@@ -3,4 +3,4 @@ alloc 2
 i32
 let Abc = 0$[0]
 rshf Abc, 8, 1
-printd Abc, 0
+dprint Abc, 0

@@ -27,30 +27,30 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 				dummy = opStackref;
 				section = arrapp(section, u16 section, (char*) &dummy, 1);
 				(u16 section)++;
-				if(kinds[0]!='d'){
+				if(kinds[0]!='d' && kinds[0]!='D'){
 					error("\aOperator '$' expects a datum, not a page or nothing.\n", *readhead, sourcefile);
 					goto endonerror;
 				}
-				kinds[0] = 'p';
+				kinds[0] = 'P';
 				break;
 			case '!':
 //				printf("op is ! %x\n", opImm);
 				dummy = opImm;
 				section = arrapp(section, u16 section, (char*) &dummy, 1);
 				(u16 section)++;
-				if(kinds[0]!='p'){
+				if(kinds[0]!='p' && kinds[0]!='P'){
 					error("\aOperator '!' expects a page, not a datum or nothing.\n", *readhead, sourcefile);
 					goto endonerror;
 				}
-				kinds[0] = 'd';
+				kinds[0] = kinds[0]=='P'?'D':'d';
 				break;
 			case '^':
 //				printf("op is ^ %x\n", opMakenry);
 				dummy = opMakenry;
 				section = arrapp(section, u16 section, (char*) &dummy, 1);
 				(u16 section)++;
-				if(kinds[0]!='d'){
-					error("\aOperator '!' expects a datum, not a page or nothing.\n", *readhead, sourcefile);
+				if(kinds[0]!='d' && kinds[0]!='D'){
+					error("\aOperator '^' expects a datum, not a page or nothing.\n", *readhead, sourcefile);
 					goto endonerror;
 				}
 				kinds[0] = 'p';
@@ -60,33 +60,38 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 				dummy = opEntry;
 				section = arrapp(section, u16 section, (char*) &dummy, 1);
 				(u16 section)++;
-				if(kinds[0]!='d' || kinds[1]!='p'){
+				if(!(kinds[0]=='d' || kinds[1]=='p' || kinds[0]=='D' || kinds[1]=='P')){
 					error("\aOperator ']' expects a page and a datum (in that order).\n", *readhead, sourcefile);
 					goto endonerror;
 				}
-				kinds[0] = 'd';
+				kinds[0] = kinds[1]=='P'?'D':'d';
 				break;
 			case '>':
 //				printf("op is > %x\n", opRef);
 				dummy = opRef;
 				section = arrapp(section, u16 section, (char*) &dummy, 1);
 				(u16 section)++;
-				if(kinds[0]!='d' || kinds[1]!='p'){
+				if(!(kinds[0]=='d' || kinds[1]=='p' || kinds[0]=='D' || kinds[1]=='P')){
 					error("\aOperator '>' expects a page and a datum (in that order).\n", *readhead, sourcefile);
 					goto endonerror;
 				}
+				kinds[0] = kinds[1]=='P'?'D':'d';
 				break;
 			case '*':
 //				printf("op is *\n");
-				if(u8(section - 1 + u16 section) == opEntry || u8(section - 1 + u16 section) == opRef)
+				if(u8(section - 1 + u16 section) == opEntry || u8(section - 1 + u16 section) == opRef){
+					if(kinds[1]!='P'){
+						error("\aThis operator expects its first argument to be a mutable page.\n", *readhead, sourcefile);
+						goto endonerror;
+					}
 					u8 (section - 1 + u16 section) += 2;
-				break;
+				} break;
 			case 'l':
 //				printf("op is l %x\n", opLength);
 				dummy = opLength;
 				section = arrapp(section, u16 section, (char*) &dummy, 1);
 				(u16 section)++;
-				if(kinds[0]!='p'){
+				if(kinds[0]!='p' && kinds[0]!='P'){
 					error("\aOperator 'l' expects a page, not a datum or nothing.\n", *readhead, sourcefile);
 					goto endonerror;
 				}
@@ -97,7 +102,7 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 				dummy = opOffset;
 				section = arrapp(section, u16 section, (char*) &dummy, 1);
 				(u16 section)++;
-				if(kinds[0]!='p'){
+				if(kinds[0]!='p' && kinds[0]!='P'){
 					error("\aOperator 'o' expects a page, not a datum or nothing.\n", *readhead, sourcefile);
 					goto endonerror;
 				}
@@ -108,7 +113,7 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 				dummy = opSizeof;
 				section = arrapp(section, u16 section, (char*) &dummy, 1);
 				(u16 section)++;
-				if(kinds[0]!='d'){
+				if(kinds[0]!='d' && kinds[0]!='D'){
 					error("\aOperator 't' expects a datum, not a page or nothing.\n", *readhead, sourcefile);
 					goto endonerror;
 				}
@@ -354,10 +359,12 @@ bool run(file_t* runfile){
 //			printf("Type is now %s\n", typeString[(signed char)head]);
 			globalType = head;
 		} else switch(head){
-			case Ce: if(flag != 0) goto skip; break;
-			case Cs: if(flag != 2) goto skip; break;
-			case Cg: if(flag != 1) goto skip; break;
-			case Cn: if(flag == 0) goto skip; break;
+			case Ce: if(!flag.c.e) goto skip; break;
+			case Cs: if(!flag.c.s) goto skip; break;
+			case Cg: if(!flag.c.g) goto skip; break;
+			case Cse:if(!(flag.c.s || flag.c.e)) goto skip; break;
+			case Cge:if(!(flag.c.g || flag.c.e)) goto skip; break;
+			case Cn: if(flag.c.e) goto skip; break;
 				skip: if(runfile->pos < runfile->len){
 					head = runfile->mfp[runfile->pos]/2;
 					if(head == call || head == jmp) runfile->pos += 9;

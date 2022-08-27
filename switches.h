@@ -332,24 +332,120 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 			case F64: f64 nrs[0] = u64 nrs[1] << u8 nrs[2]; break;
 		} break;
 
+// gc
+		case gc: switch(globalType){
+				case Chr: case I8: flag.c.g = i8 nrs[0] > i8 nrs[1]; break;
+				case U8: flag.c.g = u8 nrs[0] > u8 nrs[1]; break;
+				case I16: flag.c.g = i16 nrs[0] > i16 nrs[1]; break;
+				case U16: flag.c.g = u16 nrs[0] > u16 nrs[1]; break;
+				case I32: flag.c.g = i32 nrs[0] > i32 nrs[1]; break;
+				case U32: flag.c.g = u32 nrs[0] > u32 nrs[1]; break;
+				case I64: flag.c.g = i64 nrs[0] > i64 nrs[1]; break;
+				case U64: flag.c.g = u64 nrs[0] > u64 nrs[1]; break;
+				case F32: flag.c.g = f32 nrs[0] > f32 nrs[1]; break;
+				case F64: flag.c.g = f64 nrs[0] > f64 nrs[1]; break;
+			} break;
+// sc
+		case sc: switch(globalType){
+				case Chr: case I8: flag.c.s = i8 nrs[0] < i8 nrs[1]; break;
+				case U8: flag.c.s = u8 nrs[0] < u8 nrs[1]; break;
+				case I16: flag.c.s = i16 nrs[0] < i16 nrs[1]; break;
+				case U16: flag.c.s = u16 nrs[0] < u16 nrs[1]; break;
+				case I32: flag.c.s = i32 nrs[0] < i32 nrs[1]; break;
+				case U32: flag.c.s = u32 nrs[0] < u32 nrs[1]; break;
+				case I64: flag.c.s = i64 nrs[0] < i64 nrs[1]; break;
+				case U64: flag.c.s = u64 nrs[0] < u64 nrs[1]; break;
+				case F32: flag.c.s = f32 nrs[0] < f32 nrs[1]; break;
+				case F64: flag.c.s = f64 nrs[0] < f64 nrs[1]; break;
+			} break;
+// gec
+		case gec: if(globalType < F32){
+			switch(globalType){
+				case Chr...U8: dummy = u8 nrs[0]; silly = u8 nrs[1]; break;
+				case I16: case U16: dummy = u16 nrs[0]; silly = u16 nrs[1]; break;
+				case I32: case U32: dummy = u32 nrs[0]; silly = u32 nrs[1]; break;
+				case I64: case U64: dummy = u64 nrs[0]; silly = u64 nrs[1]; break;
+			}
+			if(globalType % 2 == 0)
+				flag.s |= CE*(dummy == silly)
+				        | CG*(dummy >  silly);
+			else
+				flag.s |= CE*((int64_t) dummy == (int64_t) silly)
+				        | CG*((int64_t) dummy >  (int64_t) silly);
+			} else switch(globalType){
+				case F32:
+					flag.s |= CE*(f32 nrs[0] == f32 nrs[1])
+					        | CG*(f32 nrs[0] >  f32 nrs[1]); break;
+				case F64:
+					flag.s |= CE*(f64 nrs[0] == f64 nrs[1])
+					        | CG*(f64 nrs[0] >  f64 nrs[1]); break;
+			} break;
+// sec
+		case sec: if(globalType < F32){
+			switch(globalType){
+				case Chr...U8: dummy = u8 nrs[0]; silly = u8 nrs[1]; break;
+				case I16: case U16: dummy = u16 nrs[0]; silly = u16 nrs[1]; break;
+				case I32: case U32: dummy = u32 nrs[0]; silly = u32 nrs[1]; break;
+				case I64: case U64: dummy = u64 nrs[0]; silly = u64 nrs[1]; break;
+			}
+			if(globalType % 2 == 0)
+				flag.s |= CE*(dummy == silly)
+				        | CS*(dummy <  silly);
+			else
+				flag.s |= CE*((int64_t) dummy == (int64_t) silly)
+				        | CS*((int64_t) dummy <  (int64_t) silly);				
+			} else switch(globalType){
+				case F32:
+					flag.s |= CE*(f32 nrs[0] == f32 nrs[1])
+					        | CS*(f32 nrs[0] <  f32 nrs[1]); break;
+				case F64:
+					flag.s |= CE*(f64 nrs[0] == f64 nrs[1])
+					        | CS*(f64 nrs[0] <  f64 nrs[1]); break;
+			} break;
+// ec
+		case ec: switch(globalType){
+				case Chr: case I8: flag.c.e = i8 nrs[0] == i8 nrs[1]; break;
+				case U8: flag.c.e = u8 nrs[0] == u8 nrs[1]; break;
+				case I16: flag.c.e = i16 nrs[0] == i16 nrs[1]; break;
+				case U16: flag.c.e = u16 nrs[0] == u16 nrs[1]; break;
+				case I32: flag.c.e = i32 nrs[0] == i32 nrs[1]; break;
+				case U32: flag.c.e = u32 nrs[0] == u32 nrs[1]; break;
+				case I64: flag.c.e = i64 nrs[0] == i64 nrs[1]; break;
+				case U64: flag.c.e = u64 nrs[0] == u64 nrs[1]; break;
+				case F32: flag.c.e = f32 nrs[0] == f32 nrs[1]; break;
+				case F64: flag.c.e = f64 nrs[0] == f64 nrs[1]; break;
+			} break;
 // cmp
 		case cmp: if(globalType < F32){
-				if(integer(nrs[0], globalType) == integer(nrs[1], globalType)) flag = 0;
-				else if(integer(nrs[0], globalType) < integer(nrs[1], globalType)) flag = 2;
-				else flag = 1;
-			} else if(globalType == F32){
-				if(f32 nrs[0] == f32 nrs[1]) flag = 0;
-				else if(f32 nrs[0] < f32 nrs[1]) flag = 2;
-				else flag = 1;
+			switch(globalType){
+				case Chr...U8: dummy = u8 nrs[0]; silly = u8 nrs[1]; break;
+				case I16: case U16: dummy = u16 nrs[0]; silly = u16 nrs[1]; break;
+				case I32: case U32: dummy = u32 nrs[0]; silly = u32 nrs[1]; break;
+				case I64: case U64: dummy = u64 nrs[0]; silly = u64 nrs[1]; break;
+			}
+			if(globalType % 2 == 0){
+//				printf("%lu, %lu\n", dummy, silly);
+				flag.s = CE*(dummy == silly)
+				       | CS*(dummy <  silly)
+				       | CG*(dummy >  silly);
 			} else {
-				if(f64 nrs[0] == f64 nrs[1]) flag = 0;
-				else if(f64 nrs[0] < f64 nrs[1]) flag = 2;
-				else flag = 1;
+				flag.s = CE*((int64_t) dummy == (int64_t) silly)
+				       | CS*((int64_t) dummy <  (int64_t) silly)
+				       | CG*((int64_t) dummy >  (int64_t) silly);}
+			} else switch(globalType){
+				case F32:
+					flag.s = CE*(f32 nrs[0] == f32 nrs[1])
+					       | CS*(f32 nrs[0] <  f32 nrs[1])
+					       | CG*(f32 nrs[0] >  f32 nrs[1]); break;
+				case F64:
+					flag.s = CE*(f64 nrs[0] == f64 nrs[1])
+					       | CS*(f64 nrs[0] <  f64 nrs[1])
+					       | CG*(f64 nrs[0] >  f64 nrs[1]); break;
 			} break;
-// equ
-		case equ:
-			if(equalnry(args[0], args[1])) flag = 0;
-			else flag = 3; ;break;
+// pec
+		case pec:
+			flag.s = CE*equalnry(args[0], args[1]);
+			break;
 
 // input
 		case input: UserInput = malloc(userInputLen); switch(globalType){
@@ -372,7 +468,7 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 			} free(UserInput);
 			break;
 //printd
-		case printd: switch(globalType){
+		case dprint: switch(globalType){
 				case Chr: printf("%c", chr nrs[0]); break;
 				case I8:  printf("%d", i8 nrs[0]); break;
 				case U8:  printf("%u", u8 nrs[0]); break;

@@ -15,23 +15,46 @@ void error(char* errormessage, int readhead, file_t* file){
 	printf("<^>\n");
 }
 
+char* templkindsw(char thing[4][14], char inp){
+	switch(inp){
+		case 'd': return thing[0]; break;
+		case 'p': return thing[1]; break;
+		case 'D': return thing[2]; break;
+		case 'P': return thing[3]; break;
+	}
+}
+
+char* inskindsw(char thing[4][16], char inp, char goal){
+	switch(inp){
+		case 'd': if(goal == 'D') return thing[2]; else return thing[0]; break;
+		case 'p': if(goal == 'P') return thing[3]; else return thing[1]; break;
+		case 'D': if(goal == 'D') return thing[4]; else return thing[0]; break;
+		case 'P': if(goal == 'P') return thing[5]; else return thing[1]; break;
+	}
+}
+
 bool checkkinds(signed char ins, char* kinds, file_t* file){
 	bool good = true;
 //	printf("checking kinds: %s %s? %s\n", instructionString[ins], kinds, instructionKinds[ins]);
 	for(signed char i = 0; (i < argumentAmount) && good; i++)
-		good = kinds[i] == instructionKinds[ins][i];
+		good = (kinds[i] == instructionKinds[ins][i]) || (kinds[i] + 0x20 == instructionKinds[ins][i]);
 	if(good) return good;
 	int newlines = 0;
 	for(uint64_t i = 0; i < file->pos; i++)
 		if(file->mfp[i] == '\n') newlines++;
 	printf("\aThe given arguments on the following line were not of the correct kind:\n");
 	printf(" %d|%s\n\n", newlines, UserInput);
+
 	printf("The instruction '%s' expects:\n\t%s ", instructionString[ins], instructionString[ins]);
+	char template[4][14] = {"datum", "page", "mutable datum", "mutable page"};
 	for(signed char i = 0; i < argumentAmount && instructionKinds[ins][i] != '_'; i++)
-		printf("<%s>, ", instructionKinds[ins][i]=='p'?"page":"datum");
+		printf("(%s), ", templkindsw(template, instructionKinds[ins][i]));
+
+	char results[6][16] = {"datum", "page", "immutable datum", "immutable page", "mutable datum", "mutable page"};
 	printf("\b\b;\nbut was given:\n\t%s ", instructionString[ins]);
 	for(signed char i = 0; i < argumentAmount && kinds[i] != '_'; i++)
-		printf("<%s>, ", kinds[i]=='p'?"page":"datum");
+		printf("(%s), ", inskindsw(results, kinds[i], instructionKinds[ins][i]));
+
 	printf("\b\b;\n");
 	return false;
 }
