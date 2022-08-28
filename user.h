@@ -22,6 +22,7 @@ char* templkindsw(char thing[4][14], char inp){
 		case 'D': return thing[2]; break;
 		case 'P': return thing[3]; break;
 	}
+	return UserInput;
 }
 
 char* inskindsw(char thing[4][16], char inp, char goal){
@@ -31,6 +32,7 @@ char* inskindsw(char thing[4][16], char inp, char goal){
 		case 'D': if(goal == 'D') return thing[4]; else return thing[0]; break;
 		case 'P': if(goal == 'P') return thing[5]; else return thing[1]; break;
 	}
+	return UserInput;
 }
 
 bool checkkinds(signed char ins, char* kinds, file_t* file){
@@ -127,11 +129,14 @@ bind_t* insertbind(file_t* file, int* readhead, bind_t* binds){
 	userInputLen = STANDARDuserInputLen + rlen - blen;
 	if(userInputLen > STANDARDuserInputLen)
 		UserInput = realloc(UserInput, userInputLen);
-	memmove(UserInput + *readhead + rlen,
+/*	printf("start %p, end %p, src %p, des %p, wlen %d, endes %p, endsrc %p\nnewlen %d, srcoffset %d, desoffset %d\n",
+			UserInput, UserInput + userInputLen, UserInput + *readhead + rlen, UserInput + *readhead + blen,
+			STANDARDuserInputLen - *readhead - blen - 1, UserInput + *readhead + rlen + STANDARDuserInputLen - *readhead - blen - 1,
+			UserInput + *readhead + blen + STANDARDuserInputLen - *readhead - blen - 1,
+			userInputLen, *readhead + rlen, *readhead + blen);
+*/	memmove(UserInput + *readhead + rlen,
 			UserInput + *readhead + blen,
 			STANDARDuserInputLen - *readhead - blen - 1);
-	if(userInputLen < STANDARDuserInputLen)
-		UserInput = realloc(UserInput, userInputLen);
 	memcpy(UserInput + *readhead, binds->resos[bi], rlen);
 	(*readhead)--;
 	return binds;

@@ -215,7 +215,7 @@ nry_t* inptonry(nry_t* des, char* input, int* start, int type){
 
 void aprintnry(nry_t* src, int type, bool endline){
 	if(type == Chr){
-		src->base[src->len] = '\0';
+//		src->base[src->len] = '\0';
 		printf("%s", src->fst);
 		goto endoffunc;
 	}

@@ -26,7 +26,7 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 	for(uint16_t readhead = 2; readhead < exprlen; readhead++){
 		val = u8 (expr + readhead);
 //		printf("p: %lx, %lx\nd: %lx, %lx\n", (uint64_t) regp[0], (uint64_t) regp[1], (uint64_t) regd[0], (uint64_t) regd[1]);
-//		printf("%x: %c\n", val, operationString[val]);
+//		printf("in %x: %c, readhead: %d\n", val, operationString[val], readhead);
 		switch(val){
 // stack
 			case opStackref: 
@@ -48,7 +48,10 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 // makenry
 			case opMakenry:
 				regp[0] = allp[ regp[1]!=allp[0]?0:1 ];
-				inttonry(regp[0], integer(regd[0], globalType), globalType);
+				regp[0]->base = regd[0];
+				regp[0]->fst = regp[0]->base;
+				regp[0]->len = typeBylen(globalType);
+//				inttonry(regp[0], integer(regd[0], globalType), globalType);
 				regd[0] = NULL;
 				break;
 // direct
@@ -75,8 +78,8 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 				break;
 // length
 			case opLength:
-				regd[0] = alld[ regd[1]!=alld[0]?0:1 ];
-				u64 regd[0] = regp[0]->len;
+//				regd[0] = alld[ regd[1]!=alld[0]?0:1 ];
+				regd[0] = (uint8_t*) &regp[0]->len;
 				regp[0] = NULL;
 				break;
 // offset
@@ -87,8 +90,9 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 				break;
 // sizeof
 			case opSizeof:
+				dummy = integer(regd[0], globalType);
 				regd[0] = alld[ regd[1]!=alld[0]?0:1 ];
-				u64 regd[0] *= typeBylen(globalType);
+				u64 regd[0] = dummy * typeBylen(globalType);
 				regp[0] = NULL;
 				break;
 // swap
@@ -117,11 +121,11 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 
 				regp[0]->len = u16 (expr + readhead);
 				readhead += 2;
-				remakenry(regp[0], regp[0]->len);
-				regp[0]->fst = regp[0]->base + u16 (expr + readhead);
+				dummy = u16 (expr + readhead);
 				readhead += 2;
-				memcpy(regp[0]->base, expr + readhead, regp[0]->len);
-				readhead += regp[0]->len - 1;
+				regp[0]->base = (uint8_t*) (expr + readhead);
+				regp[0]->fst = regp[0]->base + dummy;
+				readhead += regp[0]->len;
 				break;
 // nrs
 			case opNrs:
@@ -129,9 +133,10 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 				regp[1] = regp[0];
 				regp[0] = NULL;
 				regd[1] = regd[0];
-				regd[0] = alld[ regd[1]!=alld[0]?0:1 ];
+				regd[0] = (uint8_t*) expr + readhead;
+//				regd[0] = alld[ regd[1]!=alld[0]?0:1 ];
 
-				u64 regd[0] = integer((uint8_t*)expr + readhead, globalType);
+//				u64 regd[0] = integer((uint8_t*)expr + readhead, globalType);
 				readhead += typeBylen(globalType) - 1;
 				break;
 		}

@@ -159,8 +159,8 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 				section = arrapp(section, u16 section, (char*) &dummy, 2);
 				u16 section += 2;
 				/*data*/
-				section = arrapp(section, u16 section, (char*)dnry.base, dnry.len);
-				u16 section += (uint16_t) dnry.len;
+				section = arrapp(section, u16 section, (char*)dnry.base, dnry.len + 1);
+				u16 section += (uint16_t) dnry.len + 1; // + 1 because extra null terminator :(
 				(*readhead)--;
 				kinds[1] = kinds[0]; kinds[0] = 'p';
 				break;
@@ -185,8 +185,8 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 				u16 section += 2;
 				/*data*/
 //				aprintnry(&dnry, globalType, true);
-				section = arrapp(section, u16 section, (char*)dnry.base, dnry.len);
-				u16 section += (uint16_t) dnry.len;
+				section = arrapp(section, u16 section, (char*)dnry.base, dnry.len + 1);
+				u16 section += (uint16_t) dnry.len + 1; // + 1 because extra null terminator :(
 				(*readhead)--;
 				kinds[1] = kinds[0]; kinds[0] = 'p';
 				break;
@@ -204,7 +204,7 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 				kinds[1] = kinds[0]; kinds[0] = 'd';
 				break;
 			case 'A'...'Z':
-//				printf("%c\n", UserInput[*readhead]);
+//				printf("Kind is binding, %c\n%s\n", UserInput[*readhead], UserInput);
 				if(insertbind(sourcefile, readhead, bindings) == NULL) goto endonerror;
 				break;
 		}
@@ -370,6 +370,7 @@ bool run(file_t* runfile){
 					if(head == call || head == jmp) runfile->pos += 9;
 					else if(head == ret){ runfile->pos += 1; globalType = STANDARDtype;}
 					else runfile->pos += (u16 (runfile->mfp + runfile->pos + 1)) + 1;
+//					printf("skip, runfile->pos: %lx\n", runfile->pos);
 				} break;
 			case call:
 				i64 callnr.base = stackFrameOffset;
@@ -405,8 +406,6 @@ bool run(file_t* runfile){
 //		printf("pos x%lx\n", runfile->pos);
 	}
 	freenry(&callnr);
-	for(int i = 0; i < argumentAmount*2; i++)
-		freenry(&allp[i]);
 	return retbool;
 }
 
@@ -428,12 +427,13 @@ int main(int argc, char** argv){
 	file_t sourcefile = {0, 0, NULL};
 	file_t runfile = {0, 0, NULL};
 	sta.te = SOURCE_IN | RUN;
-	nry_t stackarg = *makenry(&stackarg, 8);
+	nry_t stackarg = {NULL, 0, NULL};
 	int desf = -1;
 	for(int i = 1; i < argc; i++){
-		if(sta.t.stackargs)
+		if(sta.t.stackargs){
 			pushtost(strcpytonry(&stackarg, argv[i]));
-		else if(argv[i][0] == '-') switch (argv[i][1]){
+			freenry(&stackarg);
+		} else if(argv[i][0] == '-') switch (argv[i][1]){
 			case 'r': sta.te = BINARY_IN | RUN; break;
 			case 'c': sta.te = SOURCE_IN | BINARY_OUT; break;
 			case 'o': sta.te |= BINARY_OUT; desf = 0; break;
@@ -456,7 +456,6 @@ int main(int argc, char** argv){
 			printf("A\n");
 		}
 	}
-	freenry(&stackarg);
 	if(sta.t.source_in){
 		if(!compile(&sourcefile, &runfile)) ENDonERROR;
 	}

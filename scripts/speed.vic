@@ -3,13 +3,13 @@ let Start = 2$!
 let I = 1$!
 u64
 alloc 3
-set Limit, 300 000 000
+set Limit, 600 000 000
 time Start
 :loop, u64
 	inc I
-	cmp I, Limit
+	sc I, Limit
 	Cs jmp loop
-printd I, 0
+dprint I, 0
 time Endtime
 sub Endtime, Endtime, Start
-printd Endtime, 0
+dprint Endtime, 0
