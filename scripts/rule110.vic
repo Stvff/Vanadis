@@ -16,8 +16,8 @@ jmp MAIN
 	sub Length, New.l, 2
 	jmp itercon
 	# a b c, !((a & b) & c) & (b | c)
-	let A = Old<0>; let B = Old<1>; let C = Old<2>
-	let Gr1 = 1$[0]; let Gr2 = 1$[1]
+	enum A B C = Old<
+	enum Gr1 Gr2 = 1$
 	:iterfor, u8
 		or Gr1, B, C
 		and Gr2, A, B

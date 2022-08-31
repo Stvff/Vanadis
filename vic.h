@@ -3,8 +3,8 @@
 #include "nry.h"
 #include "iostr.h"
 
-#define STANDARDuserInputLen 512
 #define maxKeywordLen 16
+#define STANDARDuserInputLen 512
 #define argumentAmount 4
 
 // ######################################################################################## instructions
@@ -19,7 +19,7 @@ char instructionString[][maxKeywordLen] = {
 	"fread", "fwrite", "flen", "time", // 8
 	"ex", // 9
 	"Ce", "Cs", "Cg", "Cse", "Cge", "Cn", "jmp", "call", "ret", // 10
-	"let", // 12
+	"let", "enum", // 12
 	"\0end"
 };
 
@@ -34,7 +34,7 @@ enum instructionEnum {
 	firead, fiwrite, flen, timei, // 8
 	ex, // 9
 	Ce, Cs, Cg, Cse, Cge, Cn, jmp, call, ret, // 10
-	bind, // 11
+	let, enumb, // 11
 	final
 };
 

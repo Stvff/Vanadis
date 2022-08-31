@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdint.h>
+#include <math.h>
 
 // ######################################################################################## custom string functions
 bool EndLine(char* entry){
@@ -70,6 +71,24 @@ int labellook(char* string, char** source){
 		item++;
 	}
 	return -1;
+}
+
+
+int64_t psi(int64_t g,int64_t h,int64_t n){
+	return (n % (int64_t)pow((float)g, (float)(h+1)))/(int64_t)pow((float)g,(float)h);
+}
+
+uint8_t printinttostr(char* string, uint8_t integ){
+	char chrrr;
+	bool itmaynotzero = true;
+	for(int i = 0; i < 3; i++){
+		chrrr = psi(10, 2 - i, integ) + 0x30;
+		if(i == 2) itmaynotzero = false;
+		if(chrrr == '0' && itmaynotzero) chrrr = ' ';
+		else itmaynotzero = false;
+		string[i] = chrrr;
+	}
+	return integ;
 }
 
 // ######################################################################################## custom file functions

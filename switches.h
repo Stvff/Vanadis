@@ -125,7 +125,7 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 				readhead += 2;
 				regp[0]->base = (uint8_t*) (expr + readhead);
 				regp[0]->fst = regp[0]->base + dummy;
-				readhead += regp[0]->len;
+				readhead += regp[0]->len - 1;
 				break;
 // nrs
 			case opNrs:

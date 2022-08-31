@@ -215,8 +215,10 @@ nry_t* inptonry(nry_t* des, char* input, int* start, int type){
 
 void aprintnry(nry_t* src, int type, bool endline){
 	if(type == Chr){
-//		src->base[src->len] = '\0';
+		char saf = src->base[src->len];
+		src->base[src->len] = '\0';
 		printf("%s", src->fst);
+		src->base[src->len] = saf;
 		goto endoffunc;
 	}
 	int inc = typeBylen(type);

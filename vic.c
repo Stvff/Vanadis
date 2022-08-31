@@ -159,8 +159,8 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 				section = arrapp(section, u16 section, (char*) &dummy, 2);
 				u16 section += 2;
 				/*data*/
-				section = arrapp(section, u16 section, (char*)dnry.base, dnry.len + 1);
-				u16 section += (uint16_t) dnry.len + 1; // + 1 because extra null terminator :(
+				section = arrapp(section, u16 section, (char*)dnry.base, dnry.len);
+				u16 section += (uint16_t) dnry.len;
 				(*readhead)--;
 				kinds[1] = kinds[0]; kinds[0] = 'p';
 				break;
@@ -185,8 +185,8 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 				u16 section += 2;
 				/*data*/
 //				aprintnry(&dnry, globalType, true);
-				section = arrapp(section, u16 section, (char*)dnry.base, dnry.len + 1);
-				u16 section += (uint16_t) dnry.len + 1; // + 1 because extra null terminator :(
+				section = arrapp(section, u16 section, (char*)dnry.base, dnry.len);
+				u16 section += (uint16_t) dnry.len;
 				(*readhead)--;
 				kinds[1] = kinds[0]; kinds[0] = 'p';
 				break;
@@ -226,7 +226,7 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 }
 
 bool compile(file_t* sourcefile, file_t* runfile){
-	UserInput = malloc(userInputLen + maxKeywordLen);
+	UserInput = malloc(userInputLen);
 	int readhead, ins, previns = 0;
 	char inssection = 0;
 	char* argsection = NULL;
@@ -291,10 +291,12 @@ bool compile(file_t* sourcefile, file_t* runfile){
 		}
 		readhead++;
 /*writing ins*/
-		if(inssection%2 == 0 && ins == bind){
-			if(bindo(runfile, readhead, &bindings) == NULL) goto endonerror;
+		if(inssection%2 == 0 && ins >= let && ins <= enumb){
+			switch(ins){
+				case let: if(letbind(runfile, readhead, &bindings) == NULL) goto endonerror; break;
+				case enumb:if(enumbind(runfile, readhead, &bindings) == NULL) goto endonerror; break;
 //			printf("Binding: %s\n", bindings.binds[bindings.bindam-1]);
-			goto compwhile;//loop
+			} goto compwhile;//loop
 		}
 		inssection += ins*2; previns = inssection;
 		mfapp(runfile, &inssection, 1);
