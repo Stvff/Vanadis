@@ -217,7 +217,7 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 	if(!checkkinds((signed char)ins, argkinds, sourcefile))
 		goto endonerror;
 	freenry(&dnry);
-	if(userInputLen != STANDARDuserInputLen) UserInput = realloc(UserInput, STANDARDuserInputLen);
+	if(userInputLen != STANDARDuserInputLen){ UserInput = realloc(UserInput, STANDARDuserInputLen); userInputLen = STANDARDuserInputLen;};
 	return section;
 	endonerror:
 	free(section);
@@ -225,7 +225,7 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 	return NULL;
 }
 
-bool compile(file_t* sourcefile, file_t* runfile){
+bool compile(file_t* sourcefile, file_t* runfile, char* sourcename){
 	UserInput = malloc(userInputLen);
 	int readhead, ins, previns = 0;
 	char inssection = 0;
@@ -235,6 +235,8 @@ bool compile(file_t* sourcefile, file_t* runfile){
 	lbl_t labeling = {0, NULL, NULL, 0, NULL, NULL};
 	bind_t bindings = {0, malloc(sizeof(char*)), malloc(sizeof(char*))};
 	bindings.binds[0] = NULL; bindings.resos[0] = NULL;
+	memowy_t includes = {0, 0, 0, NULL};
+	allocmemwy(&includes, sourcename, strlen(sourcename) + 1);
 
 	compwhile:
 		readhead = 0; ins = -1;
@@ -291,11 +293,12 @@ bool compile(file_t* sourcefile, file_t* runfile){
 		}
 		readhead++;
 /*writing ins*/
-		if(inssection%2 == 0 && ins >= let && ins <= enumb){
+		if(inssection%2 == 0 && ins >= let && ins <= include){
+//			printf("macro: %s\n", UserInput);
 			switch(ins){
-				case let: if(letbind(runfile, readhead, &bindings) == NULL) goto endonerror; break;
-				case enumb:if(enumbind(runfile, readhead, &bindings) == NULL) goto endonerror; break;
-//			printf("Binding: %s\n", bindings.binds[bindings.bindam-1]);
+				case let: if(letbind(sourcefile, readhead, &bindings) == NULL) goto endonerror; break;
+				case enumb:if(enumbind(sourcefile, readhead, &bindings) == NULL) goto endonerror; break;
+				case include: if(includef(sourcefile, readhead, &includes) == NULL) goto endonerror; break;
 			} goto compwhile;//loop
 		}
 		inssection += ins*2; previns = inssection;
@@ -326,13 +329,15 @@ bool compile(file_t* sourcefile, file_t* runfile){
 	if(solvelabels(runfile, &labeling) == -1) goto endonerror;
 
 	free(UserInput);
-	freelabels(&labeling);
 	freebinds(&bindings);
+	freelabels(&labeling);
+	free(includes.mem);
 	return true;
 	endonerror:
 	free(UserInput);
 	freebinds(&bindings);
 	freelabels(&labeling);
+	free(includes.mem);
 	return false;
 }
 
@@ -431,6 +436,7 @@ int main(int argc, char** argv){
 	sta.te = SOURCE_IN | RUN;
 	nry_t stackarg = {NULL, 0, NULL};
 	int desf = -1;
+	int sourcenr = 0;
 	for(int i = 1; i < argc; i++){
 		if(sta.t.stackargs){
 			pushtost(strcpytonry(&stackarg, argv[i]));
@@ -444,6 +450,7 @@ int main(int argc, char** argv){
 		} else if(sta.t.source_in){
 			quicmfptr = mfopen(argv[i], &sourcefile);
 			if(quicmfptr == NULL) ENDonERROR;
+			sourcenr = i;
 			sourcefile = *quicmfptr;
 			sta.te |= STACKARGS;
 			initmac();
@@ -459,7 +466,7 @@ int main(int argc, char** argv){
 		}
 	}
 	if(sta.t.source_in){
-		if(!compile(&sourcefile, &runfile)) ENDonERROR;
+		if(!compile(&sourcefile, &runfile, argv[sourcenr])) ENDonERROR;
 	}
 	mfclose(&sourcefile);
 	if(sta.t.binary_out){

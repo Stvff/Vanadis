@@ -93,7 +93,7 @@ size_t allocmemwy(memowy_t* mp, char* src, uint16_t len){
 size_t freememwy(memowy_t* mp){
 	if(mp->used == 0) return 0;
 	mp->used -= lenwy(mp->mem + mp->used - 2) + 4;
-	return mp->used - lenwy(mp->mem + mp->used - 2);
+	return mp->used - lenwy(mp->mem + mp->used);
 }
 
 size_t reallocmemwy(memowy_t* mp, uint16_t len){
@@ -107,7 +107,7 @@ size_t reallocmemwy(memowy_t* mp, uint16_t len){
 	char* loc = lenp(mp);
 	memmove(loc + len + 4, loc + oldlen + 4, remregionlen);
 	memcpy(loc, &len, 2);
-	memcpy(loc + len, &len, 2);	
+	memcpy(loc + len + 2, &len, 2);
 	return len;
 }
 
@@ -115,7 +115,6 @@ size_t appmemwy(memowy_t* mp, char* src, uint16_t len){
 	uint16_t oldlen = lenwy(lenp(mp));	
 	reallocmemwy(mp, oldlen + len);
 	memmove(data(mp) + oldlen, src, len);
-	memcpy(data(mp) + lenwy(lenp(mp)), lenp(mp), 2);
 	return len;
 }
 
@@ -147,10 +146,48 @@ void printmemwy(memowy_t* mp){
 	mp->pos = oldpos;
 }
 
-size_t delimstrlen(char* str, char chra){
-	size_t i = 0;
-	while(str[i] != '\0' && str[i] != chra) i++;
-	return i;
+pos_t findmemwy(memowy_t* mp, pos_t target){
+	pos_t oldpos = mp->pos;
+	mp->pos = 0;
+	pos_t find = mp->avai;
+	do {
+		if(mp->pos == target) continue;
+		if(lenwy(mp->mem + target) != lenwy(lenp(mp))) continue;
+		for(size_t i = 0; i < lenwy(lenp(mp)); i++) if(*(data(mp) + i) != *(mp->mem + target + 2 + i)) goto haha;
+//		printf("same: %s\n", data(mp));
+		find = mp->pos;
+		break;
+		haha:
+	} while(indexmemwy(mp, 1) == 0);
+	mp->pos = oldpos;
+	return find;
+}
+
+//##################################################################################### includes
+void* includef(file_t* desfile, int i, memowy_t* includes){
+	/* allocating and checking if file is already included */
+	SkipSpaces(UserInput, userInputLen, &i);
+	int filenamelen = 0;
+	while(!EndLine(UserInput + i + filenamelen) && !IsSpace(UserInput + i + filenamelen))
+		filenamelen++;
+	UserInput[i + filenamelen] = '\0';
+	pos_t newinclude = allocmemwy(includes, UserInput + i, filenamelen + 1);
+	if(findmemwy(includes, newinclude) != includes->avai){
+//		printf("already included\n");
+		freememwy(includes);
+		return desfile;
+	}
+	/* opening and inserting file */
+	file_t srcfile = {0, 0, NULL};
+	quicmfptr = mfopen(includes->mem + newinclude + 2, &srcfile);
+	if(quicmfptr == NULL){
+		error("", i, desfile);
+		return NULL;
+	}
+	srcfile = *quicmfptr;
+	mfins(desfile, desfile->pos, srcfile.mfp, srcfile.len);
+	mfclose(&srcfile);
+	return desfile;
 }
 
 //##################################################################################### binds

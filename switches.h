@@ -17,10 +17,9 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 	uint16_t val = 0;
 	nry_t* regp[2] = {NULL, NULL};
 	uint8_t* regd[2] = {NULL, NULL};
-	nry_t* allp[2] = {&ALLp[0], &ALLp[1]};
-	uint8_t* alld[2] = {(uint8_t*)&ALLd[0], (uint8_t*)&ALLd[1]};
-//	printf("ap: %lx, %lx\nad: %lx, %lx\n", (uint64_t) allp[0], (uint64_t) allp[1], (uint64_t) alld[0], (uint64_t) alld[1]);
 	uint8_t argnr = 0;
+	uint8_t and = 0;
+	uint8_t anp = 0;
 //	printf("Solving expression now\n");
 //	printf("exprlen: x%x\n", exprlen);
 	for(uint16_t readhead = 2; readhead < exprlen; readhead++){
@@ -47,11 +46,11 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 				break;
 // makenry
 			case opMakenry:
-				regp[0] = allp[ regp[1]!=allp[0]?0:1 ];
+				anp ^= 1;
+				regp[0] = &ALLp[argnr*2 + anp];
 				regp[0]->base = regd[0];
 				regp[0]->fst = regp[0]->base;
 				regp[0]->len = typeBylen(globalType);
-//				inttonry(regp[0], integer(regd[0], globalType), globalType);
 				regd[0] = NULL;
 				break;
 // direct
@@ -78,20 +77,21 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 				break;
 // length
 			case opLength:
-//				regd[0] = alld[ regd[1]!=alld[0]?0:1 ];
 				regd[0] = (uint8_t*) &regp[0]->len;
 				regp[0] = NULL;
 				break;
 // offset
 			case opOffset:
-				regd[0] = alld[ regd[1]!=alld[0]?0:1 ];
+				and ^= 1;
+				regd[0] = (uint8_t*) &ALLd[argnr*2 + and];
 				u64 regd[0] = regp[0]->fst - regp[0]->base;
 				regp[0] = NULL;
 				break;
 // sizeof
 			case opSizeof:
 				dummy = integer(regd[0], globalType);
-				regd[0] = alld[ regd[1]!=alld[0]?0:1 ];
+				and ^= 1;
+				regd[0] = (uint8_t*) &ALLd[argnr*2 + and];
 				u64 regd[0] = dummy * typeBylen(globalType);
 				regp[0] = NULL;
 				break;
@@ -107,15 +107,16 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 				args[argnr] = regp[0];
 				nrs[argnr] = regd[0];
 				argnr++;
-				allp[0] = &ALLp[argnr*2]; allp[1] = &ALLp[2*argnr + 1];
-				alld[0] = (uint8_t*)&ALLd[argnr*2]; alld[1] = (uint8_t*)&ALLd[2*argnr + 1];
+				and = 0;
+				anp = 0;
 				regp[0] = NULL; regp[1] = NULL; regd[0] = NULL; regd[1] = NULL;
 				break;
 // nry
 			case opNry:
 				readhead++;
 				regp[1] = regp[0];
-				regp[0] = allp[ regp[1]!=allp[0]?0:1 ];
+				and ^= 1;
+				regp[0] = &ALLp[argnr*2 + and];
 				regd[1] = regd[0];
 				regd[0] = NULL;
 
@@ -134,16 +135,11 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 				regp[0] = NULL;
 				regd[1] = regd[0];
 				regd[0] = (uint8_t*) expr + readhead;
-//				regd[0] = alld[ regd[1]!=alld[0]?0:1 ];
-
-//				u64 regd[0] = integer((uint8_t*)expr + readhead, globalType);
 				readhead += typeBylen(globalType) - 1;
 				break;
 		}
 		if(!ret) break;
 	}
-	args[argnr] = regp[0];
-	nrs[argnr] = regd[0];
 	args[argnr] = regp[0];
 	nrs[argnr] = regd[0];
 //	printf("done solving expressions\n");

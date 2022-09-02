@@ -244,10 +244,18 @@ void aprintnry(nry_t* src, int type, bool endline){
 }
 
 bool equalnry(nry_t* a, nry_t* b){
-	if(a->len != b->len) return false;
+	uint64_t enda = u64 (a->base + a->len);
+	uint64_t endb = u64 (b->base + b->len);
+	u64 (a->base + a->len) = 0;
+	u64 (b->base + b->len) = 0;
+	bool same  = true;
+	if(a->len != b->len) {same = false; goto end;}
 	for(uint64_t i = 0; i < a->len; i+=8)
-		if(u64 (a->base + i) != u64 (b->base + i)) return false;
-	return true;
+		if(u64 (a->base + i) != u64 (b->base + i)){ same = false; goto end;}
+	end:
+	u64 (b->base + b->len) = enda;
+	u64 (b->base + b->len) = endb;
+	return same;
 }
 
 #endif

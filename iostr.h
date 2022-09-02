@@ -24,6 +24,12 @@ bool IsSpace(char* entry){
 	return *entry == ' ' || *entry == '\t';
 }
 
+size_t delimstrlen(char* str, char chra){
+	size_t i = 0;
+	while(str[i] != '\0' && str[i] != chra) i++;
+	return i;
+}
+
 char SkipSpaces(char* str, int len, int* i){
 	str += *i;
 	while((*str == ' ' || *str == '\t') && *i < len){
@@ -93,10 +99,9 @@ uint8_t printinttostr(char* string, uint8_t integ){
 
 // ######################################################################################## custom file functions
 typedef struct FILEstuff {
-	uint64_t len;
-	uint64_t pos;
+	size_t len;
+	size_t pos;
 	char* mfp;
-
 //	struct FILEstuff* prevfile;
 } file_t;
 
@@ -152,12 +157,20 @@ void mfclose(file_t* file){
 	file->len = 0;
 }
 
-file_t* mfapp(file_t* file, char* src, uint64_t len){
+file_t* mfapp(file_t* file, char* src, size_t len){
 	file->mfp = realloc(file->mfp, file->len + len);
 	memcpy(file->mfp + file->len, src, len);
 	file->len += len;
 //	printf("%lx, len: %ld\n", (uint64_t) file->mfp, file->len);
 	return file;
+}
+
+file_t* mfins(file_t* des, size_t pos, char* src, size_t len){
+	des->mfp = realloc(des->mfp, des->len + len);
+	memmove(des->mfp + pos + len, des->mfp + pos, des->len - pos);
+	memcpy(des->mfp + pos, src, len);
+	des->len += len;
+	return des;
 }
 
 #endif
