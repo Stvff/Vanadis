@@ -134,7 +134,7 @@ char* mfgetsS(char* string, int size, file_t* file){
 file_t* mfopen(char* path, file_t* file){
 	FILE* fp = fopen(path, "r");
 	if(fp == NULL){
-		printf("\aCould not open file '%s'.\n", path);
+		fprintf(stderr, "\aCould not open file '%s'.\n", path);
 		return NULL;
 	}
 

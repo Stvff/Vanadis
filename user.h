@@ -7,12 +7,12 @@ void error(char* errormessage, int readhead, file_t* file){
 	int newlines = 0;
 	for(uint64_t i = 0; i < file->pos; i++)
 		if(file->mfp[i] == '\n') newlines++;
-	printf("%s at the %dth char:\n", errormessage, readhead + 1);
-	int skip = printf(" %d|", newlines);
-	printf("%s\n", UserInput);
+	fprintf(stderr, "%s at the %dth char:\n", errormessage, readhead + 1);
+	int skip = fprintf(stderr, " %d|", newlines);
+	fprintf(stderr, "%s\n", UserInput);
 	for(int i = 0; i < readhead + skip - 1; i++)
-		printf(" ");
-	printf("<^>\n");
+		fprintf(stderr, " ");
+	fprintf(stderr, "<^>\n");
 }
 
 char* templkindsw(char thing[4][14], char inp){
@@ -44,20 +44,20 @@ bool checkkinds(signed char ins, char* kinds, file_t* file){
 	int newlines = 0;
 	for(uint64_t i = 0; i < file->pos; i++)
 		if(file->mfp[i] == '\n') newlines++;
-	printf("\aThe given arguments on the following line were not of the correct kind:\n");
-	printf(" %d|%s\n\n", newlines, UserInput);
+	fprintf(stderr, "\aThe given arguments on the following line were not of the correct kind:\n");
+	fprintf(stderr, " %d|%s\n\n", newlines, UserInput);
 
-	printf("The instruction '%s' expects:\n\t%s ", instructionString[ins], instructionString[ins]);
+	fprintf(stderr, "The instruction '%s' expects:\n\t%s ", instructionString[ins], instructionString[ins]);
 	char template[4][14] = {"datum", "page", "mutable datum", "mutable page"};
 	for(signed char i = 0; i < argumentAmount && instructionKinds[ins][i] != '_'; i++)
-		printf("(%s), ", templkindsw(template, instructionKinds[ins][i]));
+		fprintf(stderr, "(%s), ", templkindsw(template, instructionKinds[ins][i]));
 
 	char results[6][16] = {"datum", "page", "immutable datum", "immutable page", "mutable datum", "mutable page"};
-	printf("\b\b;\nbut was given:\n\t%s ", instructionString[ins]);
+	fprintf(stderr, "\b\b;\nbut was given:\n\t%s ", instructionString[ins]);
 	for(signed char i = 0; i < argumentAmount && kinds[i] != '_'; i++)
-		printf("(%s), ", inskindsw(results, kinds[i], instructionKinds[ins][i]));
+		fprintf(stderr, "(%s), ", inskindsw(results, kinds[i], instructionKinds[ins][i]));
 
-	printf("\b\b;\n");
+	fprintf(stderr, "\b\b;\n");
 	return false;
 }
 
@@ -417,7 +417,7 @@ int solvelabels(file_t* file, lbl_t* labels){
 //		dummy = 0;
 		labelnr = labellook(labels->requiredlabels[i], labels->definedlabels);
 		if(labelnr == -1){
-			printf("\aLabel '%s' does not exist.\n", labels->requiredlabels[i]);
+			fprintf(stderr, "\aLabel '%s' does not exist.\n", labels->requiredlabels[i]);
 			free(labels->definedlabels[labels->labelam]);
 			labels->definedlabels = realloc(labels->definedlabels, sizeof(char*[labels->labelam]));
 			return -1;

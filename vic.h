@@ -97,13 +97,13 @@ file_t* quicmfptr;
 
 bool stalloc(int64_t amount){
 	if(amount < 0){
-		printf("\aStack allocation amount can not be a negative value.\n");
+		fprintf(stderr, "\aStack allocation amount can not be a negative value.\n");
 		return false;
 	} else if(amount == 0) amount = 1;
 	stackPtr += amount;
 	stack = realloc(stack, sizeof(nry_t*[stackPtr + 1]));
 	if(stack == NULL){
-		printf("\aFatal stack reallocation error on alloc.\n");
+		fprintf(stderr, "\aFatal stack reallocation error on alloc.\n");
 		return false;
 	}
 	for(int i = stackPtr-amount + 1; i < stackPtr + 1; i++){
@@ -117,7 +117,7 @@ bool stalloc(int64_t amount){
 
 bool stfree(int64_t amount){
 	if(amount < 0){
-		printf("\aStack free amount can not be a negative value.\n");
+		fprintf(stderr, "\aStack free amount can not be a negative value.\n");
 		return false;
 	} else if(amount == 0) amount = 1;
 	amount = stackPtr - amount;
@@ -134,7 +134,7 @@ bool pushtost(nry_t* src){
 	stackPtr++;
 	stack = realloc(stack, sizeof(nry_t*[stackPtr + 1]));
 	if(stack == NULL){
-		printf("\aFatal stack reallocation error on push.\n");
+		fprintf(stderr, "\aFatal stack reallocation error on push.\n");
 		return false;
 	}
 	stack[stackPtr] = malloc(sizeof(nry_t));
@@ -144,7 +144,7 @@ bool pushtost(nry_t* src){
 
 bool popfromst(nry_t* des){
 	if(stackPtr < 0){
-		printf("\aThere are no elements on the stack to pop.\n");
+		fprintf(stderr, "\aThere are no elements on the stack to pop.\n");
 		return false;
 	}
 	copynry(des, stack[stackPtr]);
@@ -157,14 +157,14 @@ bool popfromst(nry_t* des){
 
 bool Flip(){
 	if(stackPtr <= -1){
-		printf("\aThere are no elements on the stack to flip.\n");
+		fprintf(stderr, "\aThere are no elements on the stack to flip.\n");
 		return false;
 	}
 
 	codexPtr++;
 	codex = realloc(codex, sizeof(nry_t*[codexPtr + 1]));
 	if(codex == NULL){
-		printf("\aFatal codex reallocation error on flip.\n");
+		fprintf(stderr, "\aFatal codex reallocation error on flip.\n");
 		return false;
 	}
 	codex[codexPtr] = stack[stackPtr];
@@ -175,14 +175,14 @@ bool Flip(){
 
 bool Unflip(){
 	if(codexPtr <= -1){
-		printf("\aThere are no elements on the codex to unflip.\n");
+		fprintf(stderr, "\aThere are no elements on the codex to unflip.\n");
 		return false;
 	}
 
 	stackPtr++;
 	stack = realloc(stack, sizeof(nry_t*[stackPtr + 1]));
 	if(stack == NULL){
-		printf("\aFatal stack reallocation error on unflip.\n");
+		fprintf(stderr, "\aFatal stack reallocation error on unflip.\n");
 		return false;
 	}
 	stack[stackPtr] = codex[codexPtr];
