@@ -33,6 +33,17 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 				}
 				kinds[0] = 'P';
 				break;
+			case '@':
+//				printf("op is @ %x\n", opStackref);
+				dummy = opStackrevref;
+				section = arrapp(section, u16 section, (char*) &dummy, 1);
+				(u16 section)++;
+				if(kinds[0]!='d' && kinds[0]!='D'){
+					error("\aOperator '@' expects a datum, not a page or nothing.\n", *readhead, sourcefile);
+					goto endonerror;
+				}
+				kinds[0] = 'P';
+				break;
 			case '!':
 //				printf("op is ! %x\n", opImm);
 				dummy = opImm;
@@ -446,6 +457,7 @@ int main(int argc, char** argv){
 			case 'c': sta.te = SOURCE_IN | BINARY_OUT; break;
 			case 'o': sta.te |= BINARY_OUT; desf = 0; break;
 			case 'e': sta.te = SOURCE_IN; break;
+//			case 'h': break;
 			default: printf("%s\n", argv[i]); break;
 		} else if(sta.t.source_in){
 			quicmfptr = mfopen(argv[i], &sourcefile);

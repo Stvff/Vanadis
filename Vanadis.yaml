@@ -37,7 +37,7 @@ rules:
       ## Constants
     - constant.number: "\\b[0-9t]+\\b"
     - constant.number: "[-]"
-    - constant.number: ":+[a-z A-Z 0-9]+\\b"
+    - constant.number: ":+[a-zA-Z0-9_-]+\\b"
 
       ## Other
 #    - preproc: "\\b(?i)(jmp|call|ret)(?-i)\\b"
@@ -54,4 +54,4 @@ rules:
         start: "(#)"
         end: "$"
         rules:
-            - todo: "(TODO|XXX|FIXME|cdx|stk|--|[)]|[(]):?"
+            - todo: "(TODO|XXX|FIXME|cdx|sta|--|[)]|[(]):?"

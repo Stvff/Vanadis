@@ -28,12 +28,24 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 //		printf("in %x: %c, readhead: %d\n", val, operationString[val], readhead);
 		switch(val){
 // stack
-			case opStackref: 
+			case opStackref:
 				dummy = stackFrameOffset + sinteger(regd[0], globalType);
 				if((int64_t) dummy > stackPtr || (int64_t) dummy < 0){
-					printf("\aInvalid stack reference.\n");
-					printf("stackPtr was %ld, stackFrameOffset was %ld, stack reference was %ld,\n", stackPtr, stackFrameOffset, sinteger(regd[0], globalType));
-					printf("resulting in attempted read at %ld.\n", (int64_t) dummy);
+					fprintf(stderr, "\aInvalid stack reference.\n");
+					fprintf(stderr, "stackPtr was %ld, stackFrameOffset was %ld, stack reference was %ld,\n", stackPtr, stackFrameOffset, sinteger(regd[0], globalType));
+					fprintf(stderr, "resulting in attempted read at %ld.\n", (int64_t) dummy);
+					ret = false; break;
+				}
+				regp[0] = stack[dummy];
+				regd[0] = NULL;
+				break;
+// revstack
+			case opStackrevref:
+				dummy = stackPtr - sinteger(regd[0], globalType);
+				if((int64_t) dummy > stackPtr || (int64_t) dummy < 0){
+					fprintf(stderr, "\aInvalid stack reference.\n");
+					fprintf(stderr, "stackPtr was %ld, stackFrameOffset was %ld, stack reference was %ld,\n", stackPtr, stackFrameOffset, sinteger(regd[0], globalType));
+					fprintf(stderr, "resulting in attempted read at %ld.\n", (int64_t) dummy);
 					ret = false; break;
 				}
 				regp[0] = stack[dummy];
