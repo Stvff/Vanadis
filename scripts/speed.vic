@@ -1,6 +1,6 @@
-let Limit = 0$!; let Endtime = 0$!
-let Start = 2$!
-let I = 1$!
+def Limit = 0$!; def Endtime = 0$!
+def Start = 2$!
+def I = 1$!
 u64
 alloc 3
 set Limit, 600 000 000

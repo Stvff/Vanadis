@@ -9,10 +9,10 @@ jmp MAIN
 	ret
 
 :iter, u8; alloc 2
-	let Old = -1$; let New = 0$
+	def Old = -1$; def New = 0$
 	mov New, Old[0]*~
 	rsz 1$, 3
-	let Length = 1$[2]
+	def Length = 1$[2]
 	sub Length, New.l, 2
 	jmp itercon
 	# a b c, !((a & b) & c) & (b | c)

@@ -11,6 +11,11 @@ bool libraryfunctionexposedtoVanadis(nry_t** args){
 };
 
 // ######################################################################################## execs
+void stackerror(int64_t ref){
+	fprintf(stderr, "\aInvalid stack reference.\n");
+	fprintf(stderr, "stackPtr was %ld, stackFrameOffset was %ld, stack reference was %ld,\n", stackPtr, stackFrameOffset, ref);
+	fprintf(stderr, "resulting in attempted read at %ld.\n", (int64_t) dummy);
+}
 
 bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* ALLp, uint64_t* ALLd){
 	bool ret = true;
@@ -27,13 +32,15 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 //		printf("p: %lx, %lx\nd: %lx, %lx\n", (uint64_t) regp[0], (uint64_t) regp[1], (uint64_t) regd[0], (uint64_t) regd[1]);
 //		printf("in %x: %c, readhead: %d\n", val, operationString[val], readhead);
 		switch(val){
+			case opNoop:
+				fprintf(stderr, "\aNo operation! This is a problem!\n");
+				ret = false;
+				break;
 // stack
 			case opStackref:
 				dummy = stackFrameOffset + sinteger(regd[0], globalType);
 				if((int64_t) dummy > stackPtr || (int64_t) dummy < 0){
-					fprintf(stderr, "\aInvalid stack reference.\n");
-					fprintf(stderr, "stackPtr was %ld, stackFrameOffset was %ld, stack reference was %ld,\n", stackPtr, stackFrameOffset, sinteger(regd[0], globalType));
-					fprintf(stderr, "resulting in attempted read at %ld.\n", (int64_t) dummy);
+					stackerror(sinteger(regd[0], globalType));
 					ret = false; break;
 				}
 				regp[0] = stack[dummy];
@@ -43,13 +50,31 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 			case opStackrevref:
 				dummy = stackPtr - sinteger(regd[0], globalType);
 				if((int64_t) dummy > stackPtr || (int64_t) dummy < 0){
-					fprintf(stderr, "\aInvalid stack reference.\n");
-					fprintf(stderr, "stackPtr was %ld, stackFrameOffset was %ld, stack reference was %ld,\n", stackPtr, stackFrameOffset, sinteger(regd[0], globalType));
-					fprintf(stderr, "resulting in attempted read at %ld.\n", (int64_t) dummy);
+					stackerror(sinteger(regd[0], globalType));
 					ret = false; break;
 				}
 				regp[0] = stack[dummy];
 				regd[0] = NULL;
+				break;
+// immediate stack
+			case opStackrefImm:
+				dummy = stackFrameOffset + sinteger(regd[0], globalType);
+				if((int64_t) dummy > stackPtr || (int64_t) dummy < 0){
+					stackerror(sinteger(regd[0], globalType));
+					ret = false; break;
+				}
+				regd[0] = stack[dummy]->fst;
+				regp[0] = NULL;
+				break;
+// immediate revstack
+			case opStackrevrefImm:
+				dummy = stackPtr - sinteger(regd[0], globalType);
+				if((int64_t) dummy > stackPtr || (int64_t) dummy < 0){
+					stackerror(sinteger(regd[0], globalType));
+					ret = false; break;
+				}
+				regd[0] = stack[dummy]->fst;
+				regp[0] = NULL;
 				break;
 // immediate
 			case opImm:

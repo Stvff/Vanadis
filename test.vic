@@ -1,7 +1,7 @@
 chr print "God's in his heaven-- / All's right with the world.", 0
 alloc 2
 i32
-#let Abc = 0$[0]
+#def Abc = 0$[0]
 enum Abc Amogus FDS = 0$
 rshf Abc, 8, 1
 dprint Abc, 0

@@ -1,0 +1,12 @@
+#!/bin/vic
+i64 push % 0 + 0
+enum Stptr Progress = 0@, i64
+staptr Stptr
+jmp printlc
+:printl, chr
+	print Progress$, 0
+	i64 inc Progress
+	:printlc, i64
+	ec Progress, Stptr
+	Cn jmp printl
+free 1

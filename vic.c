@@ -15,7 +15,8 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 	char* section = malloc(2);
 	u16 section = 2;
 	nry_t dnry; makenry(&dnry, 8);
-	signed char commaam = 0;
+	unsigned char commaam = 0;
+	unsigned char prev = opNoop;
 	char kinds[2] = {'_', '_'};
 	char argkinds[argumentAmount + 1] = "____\0";
 	SkipSpaces(UserInput, userInputLen, readhead);
@@ -32,6 +33,7 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 					goto endonerror;
 				}
 				kinds[0] = 'P';
+				prev = opStackref;
 				break;
 			case '@':
 //				printf("op is @ %x\n", opStackref);
@@ -43,9 +45,16 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 					goto endonerror;
 				}
 				kinds[0] = 'P';
+				prev = opStackrevref;
 				break;
 			case '!':
 //				printf("op is ! %x\n", opImm);
+				if(prev == opStackref || prev == opStackrevref){
+					u8 (section - 1 + u16 section) += 2;
+					kinds[0] = 'D';
+					prev += 2;
+					break;
+				}
 				dummy = opImm;
 				section = arrapp(section, u16 section, (char*) &dummy, 1);
 				(u16 section)++;
@@ -54,6 +63,7 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 					goto endonerror;
 				}
 				kinds[0] = kinds[0]=='P'?'D':'d';
+				prev = opImm;
 				break;
 			case '^':
 //				printf("op is ^ %x\n", opMakenry);
@@ -65,6 +75,7 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 					goto endonerror;
 				}
 				kinds[0] = 'p';
+				prev = opMakenry;
 				break;
 			case ']':
 //				printf("op is ] %x\n", opEntry);
@@ -76,6 +87,7 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 					goto endonerror;
 				}
 				kinds[0] = kinds[1]=='P'?'D':'d';
+				prev = opEntry;
 				break;
 			case '>':
 //				printf("op is > %x\n", opRef);
@@ -87,15 +99,17 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 					goto endonerror;
 				}
 				kinds[0] = kinds[1]=='P'?'D':'d';
+				prev = opRef;
 				break;
 			case '*':
 //				printf("op is *\n");
-				if(u8(section - 1 + u16 section) == opEntry || u8(section - 1 + u16 section) == opRef){
+				if(prev == opEntry || prev == opRef){
 					if(kinds[1]!='P'){
 						error("\aThis operator expects its first argument to be a mutable page.\n", *readhead, sourcefile);
 						goto endonerror;
 					}
 					u8 (section - 1 + u16 section) += 2;
+					prev += 2;
 				} break;
 			case 'l':
 //				printf("op is l %x\n", opLength);
@@ -107,6 +121,7 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 					goto endonerror;
 				}
 				kinds[0] = 'd';
+				prev = opLength;
 				break;
 			case 'o':
 //				printf("op is o %x\n", opLength);
@@ -118,6 +133,7 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 					goto endonerror;
 				}
 				kinds[0] = 'd';
+				prev = opOffset;
 				break;
 			case 't':
 //				printf("op is t %x\n", opSizeof);
@@ -129,6 +145,7 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 					goto endonerror;
 				}
 				kinds[0] = 'd';
+				prev = opSizeof;
 				break;
 			case '~':
 //				printf("op is ~ %x\n", opLength);
@@ -140,6 +157,7 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 					goto endonerror;
 				}
 				dummy = kinds[0]; kinds[0] = kinds[1]; kinds[1] = dummy;
+				prev = opSwap;
 				break;
 			case ',':
 //				printf("kind is , %x\n", opComma);
@@ -153,6 +171,7 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 				section = arrapp(section, u16 section, (char*) &dummy, 1);
 				(u16 section)++;
 				kinds[0] = '_'; kinds[1] = '_';
+				prev = opComma;
 				break;
 			case '"':
 //				printf("kind is \" %x\n", opNry);
@@ -174,6 +193,7 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 				u16 section += (uint16_t) dnry.len;
 				(*readhead)--;
 				kinds[1] = kinds[0]; kinds[0] = 'p';
+				prev = opNry;
 				break;
 			case '%':
 //				printf("kind is nry %x\n", opNry);
@@ -200,6 +220,7 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 				u16 section += (uint16_t) dnry.len;
 				(*readhead)--;
 				kinds[1] = kinds[0]; kinds[0] = 'p';
+				prev = opNry;
 				break;
 			case '0'...'9': case '-': case '\'': case '+':
 //				printf("kind is nrs %x\n", opNrs);
@@ -213,6 +234,7 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 				u16 section += (uint16_t) typeBylen(globalType);
 				(*readhead)--;
 				kinds[1] = kinds[0]; kinds[0] = 'd';
+				prev = opNrs;
 				break;
 			case 'A'...'Z':
 //				printf("Kind is binding, %c\n%s\n", UserInput[*readhead], UserInput);
@@ -224,12 +246,14 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 		(*readhead)++;
 	} while(*readhead < userInputLen);
 	argkinds[commaam] = kinds[0];
+
 	end:
 	if(!checkkinds((signed char)ins, argkinds, sourcefile))
 		goto endonerror;
 	freenry(&dnry);
 	if(userInputLen != STANDARDuserInputLen){ UserInput = realloc(UserInput, STANDARDuserInputLen); userInputLen = STANDARDuserInputLen;};
 	return section;
+
 	endonerror:
 	free(section);
 	freenry(&dnry);

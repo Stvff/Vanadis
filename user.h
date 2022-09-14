@@ -11,7 +11,9 @@ void error(char* errormessage, int readhead, file_t* file){
 	int skip = fprintf(stderr, " %d|", newlines);
 	fprintf(stderr, "%s\n", UserInput);
 	for(int i = 0; i < readhead + skip - 1; i++)
-		fprintf(stderr, " ");
+		if(i >= skip && IsSpace(UserInput + i - skip))
+			fprintf(stderr, "%c", UserInput[i - skip]);
+		else fprintf(stderr, " ");
 	fprintf(stderr, "<^>\n");
 }
 
@@ -54,10 +56,12 @@ bool checkkinds(signed char ins, char* kinds, file_t* file){
 
 	char results[6][16] = {"datum", "page", "immutable datum", "immutable page", "mutable datum", "mutable page"};
 	fprintf(stderr, "\b\b;\nbut was given:\n\t%s ", instructionString[ins]);
-	for(signed char i = 0; i < argumentAmount && kinds[i] != '_'; i++)
-		fprintf(stderr, "(%s), ", inskindsw(results, kinds[i], instructionKinds[ins][i]));
-
-	fprintf(stderr, "\b\b;\n");
+	signed char argnr;
+	for(argnr = 0; argnr < argumentAmount && kinds[argnr] != '_'; argnr++)
+		fprintf(stderr, "(%s), ", inskindsw(results, kinds[argnr], instructionKinds[ins][argnr]));
+	if(argnr != 0)
+		fprintf(stderr, "\b\b;\n");
+	else fprintf(stderr, ";\n");
 	return false;
 }
 
@@ -335,7 +339,6 @@ bind_t* insertbind(file_t* file, int* readhead, bind_t* binds){
 	(*readhead)--;
 	return binds;
 }
-//##################################################################################### labels
 
 void freebinds(bind_t* binds){
 	for(unsigned int i = 0; i < binds->bindam + 1; i++){
@@ -345,6 +348,8 @@ void freebinds(bind_t* binds){
 	free(binds->binds);
 	free(binds->resos);
 }
+
+//##################################################################################### labels
 
 typedef struct {
 	uint32_t labelam;

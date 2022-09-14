@@ -19,7 +19,7 @@ char instructionString[][maxKeywordLen] = {
 	"fread", "fwrite", "flen", "time", // 8
 	"ex", // 9
 	"Ce", "Cs", "Cg", "Cse", "Cge", "Cn", "jmp", "call", "ret", // 10
-	"let", "enum", "import",// 12
+	"def", "enum", "import",// 12
 	"\0end"
 };
 
@@ -51,9 +51,9 @@ char instructionKinds[][argumentAmount+1] = {
 };
 
 char operationString[] = {
-	'$', '@', '!', '^', ']', '>', '*', '*', 'l', 'o', 't', '~', ',', '%', 'N' };
+	'_', '$', '@', 'I', 'I', '!', '^', ']', '>', '*', '*', 'l', 'o', 't', '~', ',', '%', 'N' };
 enum operationEnum {
-	opStackref, opStackrevref, opImm, opMakenry, opEntry, opRef, opEntryKeep, opRefKeep,
+	opNoop, opStackref, opStackrevref, opStackrefImm, opStackrevrefImm, opImm, opMakenry, opEntry, opRef, opEntryKeep, opRefKeep,
 	opLength, opOffset, opSizeof,
 	opSwap, opComma, opNry, opNrs
 };
