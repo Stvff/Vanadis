@@ -216,7 +216,7 @@ bind_t* enumbind(file_t* file, int i, bind_t* binds){
 		error("\aNo binding", bbase + bbaselen, file);
 		return NULL;
 	}
-	char whichref[3] = {'t', UserInput[bbase + bbaselen - 1] == '<'?'>':']', '\0'};
+	char whichref[2] = {UserInput[bbase + bbaselen - 1] == '<'?'>':']', '\0'};
 	/* saving UserInput and the bindbase */
 	memowy_t memowy = {MEMOWYBUF, 0, 0, malloc(MEMOWYBUF)};
 	allocmemwy(&memowy, UserInput + bbase, bbaselen);
@@ -248,8 +248,8 @@ bind_t* enumbind(file_t* file, int i, bind_t* binds){
 		appmemwy(&memowy, " = ", 3);
 		appmemwy(&memowy, memowy.mem + 2, lenwy(memowy.mem));
 		appmemwy(&memowy, "   ", 3);
-		printinttostr(data(&memowy) + lenwy(lenp(&memowy)) - 3, bindcn);
-		appmemwy(&memowy, whichref, 3);
+		printinttostr(data(&memowy) + lenwy(lenp(&memowy)) - 3, bindcn*typeBylen(globalType));
+		appmemwy(&memowy, whichref, 2);
 		/* passing it to letbind */
 		memcpy(UserInput, data(&memowy), lenwy(lenp(&memowy)));
 		letbind(file, 0, binds);

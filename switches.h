@@ -234,12 +234,13 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 			case I32: case U32: case F32: u32 nrs[0] = u32 nrs[1]; break;
 			case I64: case U64: case F64: u64 nrs[0] = u64 nrs[1]; break;
 		} break;
-// mcpy
-		case mcpy:
+// memv
+		case memv:
 			dummy = (args[0]->base + args[0]->len) - args[0]->fst;
 			silly = (args[1]->base + args[1]->len) - args[1]->fst;
 			if(silly < dummy) dummy = silly;
-			memmove(args[0]->fst, args[1]->fst, integer(nrs[2], globalType)%dummy);
+			silly = integer(nrs[2], globalType) % args[0]->len;
+			memmove(args[0]->fst, args[1]->base + silly, integer(nrs[3], globalType)%dummy);
 			break;
 // rsz
 		case rsz:
