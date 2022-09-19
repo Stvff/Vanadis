@@ -5,10 +5,14 @@
 #include <time.h>
 #include <math.h>
 
+#ifndef libraryincluded
 bool libraryfunctionexposedtoVanadis(nry_t** args){
-	printf("%lx\n", (size_t)args);
+	printf("hello from only this side\n");
 	return true;
-};
+}
+#else
+bool libraryfunctionexposedtoVanadis(nry_t** args);
+#endif
 
 // ######################################################################################## execs
 void stackerror(int64_t ref){
