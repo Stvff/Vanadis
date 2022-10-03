@@ -38,7 +38,7 @@ jmp MAIN
 #	print -1$, 0
 	:prinloop, chr
 		cmp -1$<0>, 0
-		Cn print "# ", 1
+		Cn print "RR", 1
 		Ce print "  ", 1
 		cmp -1$<1>*~.o, 0
 			Cn jmp prinloop

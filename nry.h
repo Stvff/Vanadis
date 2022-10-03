@@ -59,7 +59,7 @@ typedef struct {
 
 nry_t* makenry(nry_t* des, uint64_t len){
 	des->base = malloc(len + 8);
-//	if(des->base == NULL) printf("WHAT???? HOW???? WHAT NOW???\n");
+	if(des->base == NULL) printf("WHAT???? HOW???? WHAT NOW??? (makenry)\n");
 	memset(des->base + len, 0, 8);
 	des->fst = des->base;
 	des->len = len;
@@ -76,7 +76,7 @@ nry_t* freenry(nry_t* des){
 
 nry_t* remakenry(nry_t* des, uint64_t len){
 	des->base = realloc(des->base, len + 8);
-//	if(des->base == NULL) printf("WHAT???? HOW???? WHAT NOW???\n");
+	if(des->base == NULL) printf("WHAT???? HOW???? WHAT NOW??? (remakenry)\n");
 	des->fst = des->base;
 	memset(des->base + len, 0, 8);
 	des->len = len;
@@ -85,6 +85,7 @@ nry_t* remakenry(nry_t* des, uint64_t len){
 
 nry_t* makeimnry(nry_t* des, nry_t* src){
 	des->base = malloc(src->len + 8);
+	if(des->base == NULL) printf("WHAT???? HOW???? WHAT NOW??? (makeimnry)\n");
 	des->len = src->len;
 	memset(des->base + des->len, 0, 8);
 	des->fst = des->base + (src->fst - src->base);
@@ -95,6 +96,7 @@ nry_t* makeimnry(nry_t* des, nry_t* src){
 nry_t* copynry(nry_t* des, nry_t* src){
 	if(des->base == src->base) return des;
 	des->base = realloc(des->base, src->len + 8);
+	if(des->base == NULL) printf("WHAT???? HOW???? WHAT NOW??? (copynry)\n");
 	des->len = src->len;
 	memset(des->base + des->len, 0, 8);
 	des->fst = des->base + (src->fst - src->base);
@@ -256,6 +258,13 @@ bool equalnry(nry_t* a, nry_t* b){
 	u64 (b->base + b->len) = enda;
 	u64 (b->base + b->len) = endb;
 	return same;
+}
+
+void printnrydebug(nry_t* src){
+	printf("Debug print nry: %p--------\n", src);
+	printf("base: %p, fst: %p, len: %lu\n", src->base, src->fst, src->len);
+	printf("base + len: %p\n", src->base + src->len);
+	printf("Debug print nry over --------\n");
 }
 
 #endif

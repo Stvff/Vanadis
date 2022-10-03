@@ -1,7 +1,7 @@
 filetype: Vanadis
 
 detect:
-    filename: "\\.(vic)$"
+    filename: "\\.(vic|vas)$"
 
 rules:
     # This file is made for Vanadis, it is adapted from the NASM assembly file from micro itself

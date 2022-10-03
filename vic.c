@@ -239,6 +239,16 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 			case 'A'...'Z':
 //				printf("Kind is binding, %c\n%s\n", UserInput[*readhead], UserInput);
 				if(insertbind(sourcefile, readhead, bindings) == NULL) goto endonerror;
+//				printf("binding, %s\n", UserInput);
+				break;
+			default:
+				char tmpcfd = UserInput[*readhead];
+				if(tmpcfd >= 'a' && tmpcfd <= 'z'){
+					char errorafd[] = "\aUnknown operator ' '";
+					errorafd[19] = tmpcfd;
+					error(errorafd, *readhead, sourcefile);
+					goto endonerror;
+				}
 				break;
 		}
 		if(EndLine(UserInput + *readhead)) break;
@@ -398,7 +408,8 @@ bool run(file_t* runfile){
 		insornot = head%2;
 		head /= 2;
 		if(insornot){
-//			printf("Type is now %s\n", typeString[(signed char)head]);
+			if(debugIns)
+				printf("Type is now %s\n", typeString[(signed char)head]);
 			globalType = head;
 		} else switch(head){
 			case Ce: if(!flag.c.e) goto skip; break;
@@ -434,18 +445,20 @@ bool run(file_t* runfile){
 //				printf("ret: stackFrameOffset: x%lx, runfile->pos: %lx\n", stackFrameOffset, runfile->pos);
 				break;
 			default:
-//				printf("default, ins: %s, x%x (multiplied by 2 in bin)\n", instructionString[(signed char)head], head);
+				if(debugIns)
+					printf("default, ins: %s, x%x (multiplied by 2 in bin)\n", instructionString[(signed char)head], head);
 				exprlen = u16 (runfile->mfp + runfile->pos);
-//				printf("expressiontime:\n");
 				if(!evalexpr(runfile->mfp + runfile->pos, exprlen, args, nrs, allp, alld)){retbool = false; break;}
-//				printf("executiontime\nP0: %lx, P1: %lx, P2: %lx, P3: %lx\nD0: %lx, D1: %lx, D2: %lx, D3: %lx\n",
-//					(uint64_t) args[0], (uint64_t) args[1], (uint64_t) args[2], (uint64_t) args[3],
-//					(uint64_t) nrs[0], (uint64_t) nrs[1], (uint64_t) nrs[2], (uint64_t) nrs[3]);
 				if(!execute(head, args, nrs)){retbool = false; break;}
 				runfile->pos += exprlen;
 				break;
 		}
-//		printf("pos x%lx\n", runfile->pos);
+		if(debugIns){
+			printf("pos x%lx\n", runfile->pos);
+			printf("stackPtr: %ld, stackFrameOffset: %ld\n", stackPtr, stackFrameOffset);
+			fgetc(stdin);
+//			printstate();
+		}
 	}
 	freenry(&callnr);
 	return retbool;
@@ -468,54 +481,90 @@ union {
 int main(int argc, char** argv){
 	file_t sourcefile = {0, 0, NULL};
 	file_t runfile = {0, 0, NULL};
-	sta.te = SOURCE_IN | RUN;
 	nry_t stackarg = {NULL, 0, NULL};
-	int desf = -1;
 	int sourcenr = 0;
+	int binaryoutnr = 0;
+//	bool debug = false;
+	sta.te = 0;
+	if(!initmac()) ENDonERROR;
 	for(int i = 1; i < argc; i++){
 		if(sta.t.stackargs){
+			printf("push %s\n", argv[i]);
 			pushtost(strcpytonry(&stackarg, argv[i]));
 			freenry(&stackarg);
 		} else if(argv[i][0] == '-') switch (argv[i][1]){
-			case 'r': sta.te = BINARY_IN | RUN; break;
 			case 'c': sta.te = SOURCE_IN | BINARY_OUT; break;
-			case 'o': sta.te |= BINARY_OUT; desf = 0; break;
-			case 'e': sta.te = SOURCE_IN; break;
-//			case 'h': break;
-			default: printf("%s\n", argv[i]); break;
-		} else if(sta.t.source_in){
-			quicmfptr = mfopen(argv[i], &sourcefile);
-			if(quicmfptr == NULL) ENDonERROR;
-			sourcenr = i;
-			sourcefile = *quicmfptr;
-			sta.te |= STACKARGS;
-			initmac();
-		} else if(sta.t.binary_in){
-			quicmfptr = mfopen(argv[i], &runfile);
-			if(quicmfptr == NULL) ENDonERROR;
-			runfile = *quicmfptr;
-			sta.te |= STACKARGS;
-			initmac();
-		} else if(sta.t.binary_out && desf == 0){
-			desf = i;
-			printf("A\n");
+			case 'b': sta.te = BINARY_IN | RUN;
+			case 'd': debugIns = true; debugExpr = true; break;
+			default:
+				printf("Vanadis Interpreter and Compiler\n");
+				printf("Usage: $ vic [options] <files> [vanadis machine stack arguments]\n\n");
+				printf("	Options:\n");
+				printf("		-c <source file> <target file> : Compiles source script and saves the result to the target file.\n");
+				printf("		-b <binary file>               : Runs the binary file.\n");
+				printf("\nIf no options are given, Vanadis will look at the extension of\n");
+				printf("the given file to determine what the appropriate course of action is.\n");
+				break;
+		} else {
+			if(sta.te == 0){
+				dummy = strlen(argv[i]);
+				printf("No options\n");
+				if(dummy > 3 && argv[i][dummy-3] == 'v' && argv[i][dummy-2] == 'c' && argv[i][dummy-1] == 'o'){
+					//runfile
+					printf("bin\n");
+					quicmfptr = mfopen(argv[i], &runfile);
+					if(quicmfptr == NULL) ENDonERROR;
+					sta.t.binary_in = true;
+				} else {
+					//sourcefile
+					printf("src\n");
+					quicmfptr = mfopen(argv[i], &sourcefile);
+					if(quicmfptr == NULL) ENDonERROR;
+					sta.t.source_in = true;
+					sta.t.binary_in = true;
+					sourcenr = i;
+				}
+				sta.t.stackargs = true;
+				sta.t.run = true;
+			} else if(sta.t.source_in) {
+				printf("source in\n");
+				quicmfptr = mfopen(argv[i], &sourcefile);
+				if(quicmfptr == NULL) ENDonERROR;
+				sta.t.source_in = true;
+				sourcenr = i;
+				if(sta.t.binary_out && i + 1 < argc ) binaryoutnr = ++i;
+				sta.t.stackargs = true;
+			} else if(sta.t.binary_in){
+				printf("binary in\n");
+				quicmfptr = mfopen(argv[i], &runfile);
+				if(quicmfptr == NULL) ENDonERROR;
+				sta.t.binary_in = true;
+				sta.t.stackargs = true;
+			}
 		}
 	}
 	if(sta.t.source_in){
+		printf("compile\n");
 		if(!compile(&sourcefile, &runfile, argv[sourcenr])) ENDonERROR;
 	}
 	mfclose(&sourcefile);
 	if(sta.t.binary_out){
-		printf("filelen: %ld\n", runfile.len);
-		if(desf > 0) quicfptr = fopen(argv[desf], "wb");
-		else quicfptr = fopen("out.vco", "wb");
+		printf("write %s\n", argv[binaryoutnr]);
+		if(binaryoutnr > 0) quicfptr = fopen(argv[binaryoutnr], "wb+");
+		else quicfptr = fopen("out.vco", "wb+");
+		if(quicfptr == NULL){
+			printf("Vanadis: Could not write to file to save bytecode.\n");
+			RETURN = 1; goto endonerror;
+		}
 		fwrite(runfile.mfp, 1, runfile.len, quicfptr);
 		fclose(quicfptr);
 	}
 	if(sta.t.run){
+		printf("run\n");
 		if(!run(&runfile)) ENDonERROR;
 	}
 
+	freemac();
 	endonerror:
 	mfclose(&sourcefile);
 	mfclose(&runfile);

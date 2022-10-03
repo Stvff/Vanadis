@@ -29,15 +29,20 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 	uint8_t argnr = 0;
 	uint8_t and = 0;
 	uint8_t anp = 0;
-//	printf("Solving expression now\n");
-//	printf("exprlen: x%x\n", exprlen);
+	if(debugExpr){
+		printf("Solving expression now\n");
+		printf("exprlen: x%x\n", exprlen);
+	}
 	for(uint16_t readhead = 2; readhead < exprlen; readhead++){
 		val = u8 (expr + readhead);
-//		printf("p: %lx, %lx\nd: %lx, %lx\n", (uint64_t) regp[0], (uint64_t) regp[1], (uint64_t) regd[0], (uint64_t) regd[1]);
-//		printf("in %x: %c, readhead: %d\n", val, operationString[val], readhead);
+		if(debugExpr){
+			printf("p: %p, %p\nd: %p, %p\n", regp[0], regp[1], regd[0], regd[1]);
+			printf("I %x: %c, readhead: %d\n", val, operationString[val], readhead);
+			fgetc(stdin);
+		}
 		switch(val){
 			case opNoop:
-				fprintf(stderr, "\aNo operation! This is a problem!\n");
+				fprintf(stderr, "\aThe expression opcode for a no-op was encountered. This should not happen, and is the fault of the compiler.\n");
 				ret = false;
 				break;
 // stack
@@ -94,12 +99,12 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 				regp[0]->len = typeBylen(globalType);
 				regd[0] = NULL;
 				break;
-// direct
+// entry, direct
 			case opEntry:
 				regd[0] = regp[1]->base + ((sinteger(regd[0], globalType)) % regp[1]->len);
 				regp[0] = NULL;
 				break;
-// relative
+// entry, relative
 			case opRef:
 				regd[0] = regp[1]->base + ((regp[1]->fst - regp[1]->base + sinteger(regd[0], globalType)) % regp[1]->len);
 				regp[0] = NULL;
@@ -183,7 +188,11 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 	}
 	args[argnr] = regp[0];
 	nrs[argnr] = regd[0];
-//	printf("done solving expressions\n");
+		if(debugExpr){
+			printf("p: %p, %p\nd: %p, %p\n", regp[0], regp[1], regd[0], regd[1]);
+			printf("done solving expressions\n");
+			fgetc(stdin);
+		}
 	return ret;
 }
 
@@ -192,9 +201,9 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 	bool retbool = true;
 	switch (ins) {
 // alloc
-		case allocst: stalloc(integer(nrs[0], globalType)); break;
+		case allocst: retbool &= stalloc(integer(nrs[0], globalType)); break;
 // free
-		case freest: stfree(integer(nrs[0], globalType)); break;
+		case freest: retbool &= stfree(integer(nrs[0], globalType)); break;
 // push
 		case push: retbool &= pushtost(args[0]); break;
 // pop
@@ -571,6 +580,11 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 				case F32: f32 nrs[0] = (float) dummy; break;
 				case F64: f64 nrs[0] = (double) dummy; break;
 			}			
+			break;
+		case ex: break;
+		default:
+			fprintf(stderr, "\aAn unrecognized instruction opcode was encountered. This should not happen.\n");
+			retbool = false;
 			break;
 	}
 	return retbool;

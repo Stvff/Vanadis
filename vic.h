@@ -51,7 +51,7 @@ char instructionKinds[][argumentAmount+1] = {
 };
 
 char operationString[] = {
-	'_', '$', '@', 'I', 'I', '!', '^', ']', '>', '*', '*', 'l', 'o', 't', '~', ',', '%', 'N' };
+	'_', '$', '@', 'B', 'T', '!', '^', ']', '>', '*', '*', 'l', 'o', 't', '~', ',', '%', 'N' };
 enum operationEnum {
 	opNoop, opStackref, opStackrevref, opStackrefImm, opStackrevrefImm, opImm, opMakenry, opEntry, opRef, opEntryKeep, opRefKeep,
 	opLength, opOffset, opSizeof,
@@ -77,6 +77,9 @@ union {
 		bool s:1;
 	} c;
 } flag;
+
+bool debugIns = false;
+bool debugExpr = false;
 
 int STANDARDtype = I32;
 int globalType;
@@ -108,9 +111,9 @@ bool stalloc(int64_t amount){
 	}
 	for(int i = stackPtr-amount + 1; i < stackPtr + 1; i++){
 		stack[i] = malloc(sizeof(nry_t));
-//		printf("stackelptr: %lx\n", (uint64_t) stack[i]);
 		makenry(stack[i], 8);
 		memset(stack[i]->base, 0, 8);
+		if(debugIns) printnrydebug(stack[i]);
 	}
 	return true;
 }
@@ -178,7 +181,6 @@ bool Unflip(){
 		fprintf(stderr, "\aThere are no elements on the codex to unflip.\n");
 		return false;
 	}
-
 	stackPtr++;
 	stack = realloc(stack, sizeof(nry_t*[stackPtr + 1]));
 	if(stack == NULL){
