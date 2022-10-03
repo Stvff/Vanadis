@@ -1,13 +1,11 @@
-#ifndef IOSTR_H
-#define IOSTR_H
+#ifndef UTIL_COMMON_H
+#define UTIL_COMMON_H
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
 #include <stdint.h>
-#include <math.h>
 
-// ######################################################################################## custom string functions
 bool EndLine(char* entry){
 	return *entry == '\n' || *entry == '\r' || *entry == '\0' || *entry == ';' || *entry == ':' || *entry == '#';
 }
@@ -37,64 +35,6 @@ char SkipSpaces(char* str, int len, int* i){
 		(*i)++;
 	}
 	return *str;
-}
-
-int keywordlook(char string[], int thewordlen, char source[][thewordlen], int* readhead){
-	int item = 0;
-	int j;
-	bool isthis;
-	while (source[item][0] != '\0'){
-		isthis = true;
-		j = 0;
-//		printf("keyword %s?\n", source[item]);
-		while (source[item][j] != '\0'){
-			if(string[j + *readhead] != source[item][j]) isthis = false;
-			j++;
-		}
-		if(isthis){
-			*readhead += --j;
-			return item;
-		}
-		item++;
-	}
-	return -1;
-}
-
-int labellook(char* string, char** source){
-	int item = 0;
-	int j;
-	bool isthis;
-	while (source[item][0] != '\0'){
-		isthis = true;
-		j = 0;
-//		printf("label %s?\n", source[item]);
-		while (source[item][j] != '\0' && string[j] != '\0'){
-			if(string[j] != source[item][j]) isthis = false;
-			j++;
-		}
-		if(isthis)
-			return item;
-		item++;
-	}
-	return -1;
-}
-
-
-int64_t psi(int64_t g,int64_t h,int64_t n){
-	return (n % (int64_t)pow((float)g, (float)(h+1)))/(int64_t)pow((float)g,(float)h);
-}
-
-uint8_t printinttostr(char* string, uint8_t integ){
-	char chrrr;
-	bool itmaynotzero = true;
-	for(int i = 0; i < 3; i++){
-		chrrr = psi(10, 2 - i, integ) + 0x30;
-		if(i == 2) itmaynotzero = false;
-		if(chrrr == '0' && itmaynotzero) chrrr = ' ';
-		else itmaynotzero = false;
-		string[i] = chrrr;
-	}
-	return integ;
 }
 
 // ######################################################################################## custom file functions

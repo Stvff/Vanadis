@@ -1,6 +1,6 @@
-#ifndef NRY_H
-#define NRY_H
-#include "iostr.h"
+#ifndef UTIL_NRY_H
+#define UTIL_NRY_H
+#include "util_common.h"
 
 #define chr *(char*)
 #define i8 *(int8_t*)

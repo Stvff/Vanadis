@@ -1,9 +1,158 @@
-#ifndef VINTERPRETER_H
-#define VINTERPRETER_H
-#include "nry.h"
-#include "vic.h"
+#ifndef VA_RUN_H
+#define VA_RUN_H
+#include "util_nry.h"
+#include "va_vic.h"
 #include <time.h>
 #include <math.h>
+
+union {
+	uint8_t s;
+	struct {
+		bool e:1;
+		bool g:1;
+		bool s:1;
+	} c;
+} flag;
+
+bool debugIns = false;
+bool debugExpr = false;
+
+int STANDARDtype = I32;
+int globalType;
+nry_t** stack;
+nry_t** codex;
+int64_t stackPtr;
+int64_t codexPtr;
+int64_t stackFrameOffset;
+
+time_t thetime;
+char* UserInput;
+int userInputLen = STANDARDuserInputLen;
+uint64_t dummy;
+uint64_t silly;
+uint64_t giddy;
+FILE* quicfptr;
+file_t* quicmfptr;
+
+bool stalloc(int64_t amount){
+	if(amount < 0){
+		fprintf(stderr, "\aStack allocation amount can not be a negative value.\n");
+		return false;
+	} else if(amount == 0) amount = 1;
+	stackPtr += amount;
+	stack = realloc(stack, sizeof(nry_t*[stackPtr + 1]));
+	if(stack == NULL){
+		fprintf(stderr, "\aFatal stack reallocation error on alloc.\n");
+		return false;
+	}
+	for(int i = stackPtr-amount + 1; i < stackPtr + 1; i++){
+		stack[i] = malloc(sizeof(nry_t));
+		makenry(stack[i], 8);
+		memset(stack[i]->base, 0, 8);
+		if(debugIns) printnrydebug(stack[i]);
+	}
+	return true;
+}
+
+bool stfree(int64_t amount){
+	if(amount < 0){
+		fprintf(stderr, "\aStack free amount can not be a negative value.\n");
+		return false;
+	} else if(amount == 0) amount = 1;
+	amount = stackPtr - amount;
+	for(; stackPtr > -1 && stackPtr > amount; stackPtr--){
+		freenry(stack[stackPtr]);
+		free(stack[stackPtr]);
+	}
+	if(stackPtr == -1) stack = realloc(stack, 1);
+	else stack = realloc(stack, sizeof(nry_t*[stackPtr + 1]));
+	return true;
+}
+
+bool pushtost(nry_t* src){
+	stackPtr++;
+	stack = realloc(stack, sizeof(nry_t*[stackPtr + 1]));
+	if(stack == NULL){
+		fprintf(stderr, "\aFatal stack reallocation error on push.\n");
+		return false;
+	}
+	stack[stackPtr] = malloc(sizeof(nry_t));
+	makeimnry(stack[stackPtr], src);
+	return true;
+}
+
+bool popfromst(nry_t* des){
+	if(stackPtr < 0){
+		fprintf(stderr, "\aThere are no elements on the stack to pop.\n");
+		return false;
+	}
+	copynry(des, stack[stackPtr]);
+	freenry(stack[stackPtr]);
+	free(stack[stackPtr]);
+	stack = realloc(stack, sizeof(nry_t*[stackPtr]));
+	stackPtr--;
+	return true;
+}
+
+bool Flip(){
+	if(stackPtr <= -1){
+		fprintf(stderr, "\aThere are no elements on the stack to flip.\n");
+		return false;
+	}
+
+	codexPtr++;
+	codex = realloc(codex, sizeof(nry_t*[codexPtr + 1]));
+	if(codex == NULL){
+		fprintf(stderr, "\aFatal codex reallocation error on flip.\n");
+		return false;
+	}
+	codex[codexPtr] = stack[stackPtr];
+	stack = realloc(stack, sizeof(nry_t*[stackPtr]));
+	stackPtr--;
+	return true;
+}
+
+bool Unflip(){
+	if(codexPtr <= -1){
+		fprintf(stderr, "\aThere are no elements on the codex to unflip.\n");
+		return false;
+	}
+	stackPtr++;
+	stack = realloc(stack, sizeof(nry_t*[stackPtr + 1]));
+	if(stack == NULL){
+		fprintf(stderr, "\aFatal stack reallocation error on unflip.\n");
+		return false;
+	}
+	stack[stackPtr] = codex[codexPtr];
+	codex = realloc(codex, sizeof(nry_t[codexPtr]));
+	codexPtr--;
+	return true;
+}
+
+bool initmac(){
+	bool bol = true;
+	stackPtr = -1;
+	stackFrameOffset = 0;
+	stack = malloc(1);
+	if(stack == NULL) bol &= false;
+	codexPtr = -1;
+	codex = malloc(1);
+	if(codex == NULL) bol &= false;
+	return bol;
+}
+
+void freemac(){
+	for(; stackPtr >= 0; stackPtr--){
+		freenry(stack[stackPtr]);
+		free(stack[stackPtr]);
+	}
+	free(stack);
+	for(; codexPtr >= 0; codexPtr--){
+		freenry(codex[codexPtr]);
+		free(codex[codexPtr]);
+	}
+	free(codex);
+}
 
 #ifndef libraryincluded
 bool libraryfunctionexposedtoVanadis(nry_t** args){
@@ -195,7 +344,6 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 		}
 	return ret;
 }
-
 
 bool execute(char ins, nry_t** args, uint8_t** nrs){
 	bool retbool = true;
@@ -587,6 +735,83 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 			retbool = false;
 			break;
 	}
+	return retbool;
+}
+
+#define exprbufflen 256
+bool run(file_t* runfile){
+	bool retbool = true;
+	globalType = STANDARDtype;
+	char head;
+	bool insornot;
+	uint16_t exprlen;
+	nry_t callnr; makenry(&callnr, 16);
+
+	nry_t* args[argumentAmount] = {0};
+	uint8_t* nrs[argumentAmount] = {0};
+
+	nry_t allp[argumentAmount*2] = {0};
+	uint64_t alld[argumentAmount*2] = {0};
+
+	while(runfile->pos < runfile->len && retbool){
+		head = runfile->mfp[runfile->pos];
+		runfile->pos++;
+		insornot = head%2;
+		head /= 2;
+		if(insornot){
+			if(debugIns)
+				printf("Type is now %s\n", typeString[(signed char)head]);
+			globalType = head;
+		} else switch(head){
+			case Ce: if(!flag.c.e) goto skip; break;
+			case Cs: if(!flag.c.s) goto skip; break;
+			case Cg: if(!flag.c.g) goto skip; break;
+			case Cse:if(!(flag.c.s || flag.c.e)) goto skip; break;
+			case Cge:if(!(flag.c.g || flag.c.e)) goto skip; break;
+			case Cn: if(flag.c.e) goto skip; break;
+				skip: if(runfile->pos < runfile->len){
+					head = runfile->mfp[runfile->pos]/2;
+					if(head == call || head == jmp) runfile->pos += 9;
+					else if(head == ret){ runfile->pos += 1; globalType = STANDARDtype;}
+					else runfile->pos += (u16 (runfile->mfp + runfile->pos + 1)) + 1;
+//					printf("skip, runfile->pos: %lx\n", runfile->pos);
+				} break;
+			case call:
+				i64 callnr.base = stackFrameOffset;
+				u64 (callnr.base + 8) = runfile->pos + 8;
+				pushtost(&callnr); Flip();
+				stackFrameOffset = stackPtr + 1;
+//				printf("call, stackFrameOffset: x%lx, runfile->pos: %lx\n", stackFrameOffset, runfile->pos);
+			case jmp:
+//				globalType = STANDARDtype;
+				runfile->pos = u64 (runfile->mfp + runfile->pos);
+//				printf("jmp, runfile->pos: x%lx\n", runfile->pos);
+				break;
+			case ret:
+				Unflip();
+				popfromst(&callnr);
+				stackFrameOffset = i64 callnr.base;
+				runfile->pos = u64 (callnr.base + 8);
+				globalType = STANDARDtype;
+//				printf("ret: stackFrameOffset: x%lx, runfile->pos: %lx\n", stackFrameOffset, runfile->pos);
+				break;
+			default:
+				if(debugIns)
+					printf("default, ins: %s, x%x (multiplied by 2 in bin)\n", instructionString[(signed char)head], head);
+				exprlen = u16 (runfile->mfp + runfile->pos);
+				if(!evalexpr(runfile->mfp + runfile->pos, exprlen, args, nrs, allp, alld)){retbool = false; break;}
+				if(!execute(head, args, nrs)){retbool = false; break;}
+				runfile->pos += exprlen;
+				break;
+		}
+		if(debugIns){
+			printf("pos x%lx\n", runfile->pos);
+			printf("stackPtr: %ld, stackFrameOffset: %ld\n", stackPtr, stackFrameOffset);
+			fgetc(stdin);
+//			printstate();
+		}
+	}
+	freenry(&callnr);
 	return retbool;
 }
 
