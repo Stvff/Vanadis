@@ -657,7 +657,7 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 				if(insertbind(sourcefile, readhead, bindings) == NULL) goto endonerror;
 //				printf("binding, %s\n", UserInput);
 				break;
-			default:
+			default:;
 				char tmpcfd = UserInput[*readhead];
 				if(tmpcfd >= 'a' && tmpcfd <= 'z'){
 					char errorafd[] = "\aUnknown operator ' '";

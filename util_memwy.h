@@ -100,7 +100,7 @@ pos_t findmemwy(memowy_t* mp, pos_t target){
 //		printf("same: %s\n", data(mp));
 		find = mp->pos;
 		break;
-		haha:
+		haha:;
 	} while(indexmemwy(mp, 1) == 0);
 	mp->pos = oldpos;
 	return find;
