@@ -26,12 +26,13 @@ int main(int argc, char** argv){
 	if(!initmac()) ENDonERROR;
 	for(int i = 1; i < argc; i++){
 		if(sta.t.stackargs){
-			printf("push %s\n", argv[i]);
+			if(debugIns) printf("push %s\n", argv[i]);
 			pushtost(strcpytonry(&stackarg, argv[i]));
 			freenry(&stackarg);
 		} else if(argv[i][0] == '-') switch (argv[i][1]){
 			case 'c': sta.te = SOURCE_IN | BINARY_OUT; break;
-			case 'b': sta.te = BINARY_IN | RUN;
+			case 'b': sta.te = BINARY_IN | RUN; break;
+			case 't': sta.te = SOURCE_IN; break;
 			case 'd': debugIns = true; debugExpr = true; break;
 			default:
 				printf("Vanadis Interpreter and Compiler\n");
@@ -39,22 +40,24 @@ int main(int argc, char** argv){
 				printf("	Options:\n");
 				printf("		-c <source file> <target file> : Compiles source script and saves the result to the target file.\n");
 				printf("		-b <binary file>               : Runs the binary file.\n");
+				printf("		-t <source file>               : Tests for errors in the source script.\n");
+				printf("		-d                             : Turns on debugging.\n");
 				printf("\nIf no options are given, Vanadis will look at the extension of\n");
-				printf("the given file to determine what the appropriate course of action is.\n");
+				printf("the given file to determine what the appropriate course of action is.\n\n");
 				break;
 		} else {
 			if(sta.te == 0){
 				dummy = strlen(argv[i]);
-				printf("No options\n");
+				if(debugIns) printf("No options\n");
 				if(dummy > 3 && argv[i][dummy-3] == 'v' && argv[i][dummy-2] == 'c' && argv[i][dummy-1] == 'o'){
 					//runfile
-					printf("bin\n");
+					if(debugIns) printf("bin\n");
 					quicmfptr = mfopen(argv[i], &runfile);
 					if(quicmfptr == NULL) ENDonERROR;
 					sta.t.binary_in = true;
 				} else {
 					//sourcefile
-					printf("src\n");
+					if(debugIns) printf("src\n");
 					quicmfptr = mfopen(argv[i], &sourcefile);
 					if(quicmfptr == NULL) ENDonERROR;
 					sta.t.source_in = true;
@@ -64,7 +67,7 @@ int main(int argc, char** argv){
 				sta.t.stackargs = true;
 				sta.t.run = true;
 			} else if(sta.t.source_in) {
-				printf("source in\n");
+				if(debugIns) printf("source in\n");
 				quicmfptr = mfopen(argv[i], &sourcefile);
 				if(quicmfptr == NULL) ENDonERROR;
 				sta.t.source_in = true;
@@ -72,7 +75,7 @@ int main(int argc, char** argv){
 				if(sta.t.binary_out && i + 1 < argc ) binaryoutnr = ++i;
 				sta.t.stackargs = true;
 			} else if(sta.t.binary_in){
-				printf("binary in\n");
+				if(debugIns) printf("binary in\n");
 				quicmfptr = mfopen(argv[i], &runfile);
 				if(quicmfptr == NULL) ENDonERROR;
 				sta.t.binary_in = true;
@@ -81,12 +84,12 @@ int main(int argc, char** argv){
 		}
 	}
 	if(sta.t.source_in){
-		printf("compile\n");
+		if(debugIns) printf("compile\n");
 		if(!compile(&sourcefile, &runfile, argv[sourcenr])) ENDonERROR;
 	}
 	mfclose(&sourcefile);
 	if(sta.t.binary_out){
-		printf("write %s\n", argv[binaryoutnr]);
+		if(debugIns) printf("write %s\n", argv[binaryoutnr]);
 		if(binaryoutnr > 0) quicfptr = fopen(argv[binaryoutnr], "wb+");
 		else quicfptr = fopen("out.vco", "wb+");
 		if(quicfptr == NULL){
@@ -97,7 +100,7 @@ int main(int argc, char** argv){
 		fclose(quicfptr);
 	}
 	if(sta.t.run){
-		printf("run\n");
+		if(debugIns) printf("run\n");
 		if(!run(&runfile)) ENDonERROR;
 	}
 

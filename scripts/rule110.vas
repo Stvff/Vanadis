@@ -9,15 +9,14 @@ jmp MAIN
 	ret
 
 :iter, u8; alloc 2
-	def Old = -1$; def New = 0$
+	def Old = -1$;
+	def New = 0$
 	mov New, Old[0]*~
-	rsz 1$, 3
-	def Length = 1$[2]
+	enum Gr1 Gr2 Length = 1$, u8
 	sub Length, New.l, 2
 	jmp itercon
 	# a b c, !((a & b) & c) & (b | c)
-	enum A B C = Old<
-	enum Gr1 Gr2 = 1$
+	enum A B C = Old<, u8
 	:iterfor, u8
 		or Gr1, B, C
 		and Gr2, A, B

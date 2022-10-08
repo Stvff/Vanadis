@@ -171,7 +171,7 @@ bind_t* enumbind(file_t* file, int i, bind_t* binds){
 		return NULL;
 	}
 	bbase++; SkipSpaces(UserInput, userInputLen, &bbase);
-	int bbaselen = strlen(UserInput + bbase);
+	int bbaselen = delimstrlen(UserInput + bbase, ',');
 	if(bbaselen == 0){
 		error("\aNo binding", bbase + bbaselen, file);
 		return NULL;
@@ -197,6 +197,18 @@ bind_t* enumbind(file_t* file, int i, bind_t* binds){
 		SkipSpaces(UserInput, userInputLen, &i);
 		bindam++;
 	} while(UserInput[i] != '=');
+	/* checking the specific type of the enum */
+	int enumtype = globalType;
+	if(UserInput[bbase + bbaselen] == ','){
+		i = bbase + bbaselen;
+		i++; SkipSpaces(UserInput, userInputLen, &i);
+		enumtype = keywordlook(UserInput, 4, typeString, &i);
+		if(enumtype == -1){
+			error("\aInvalid type", i, file);
+			free(memowy.mem);
+			return NULL;
+		}
+	}
 	/* making the bindings themselves */
 	indexmemwy(&memowy, 2);
 	pos_t remem;
@@ -753,15 +765,16 @@ bool compile(file_t* sourcefile, file_t* runfile, char* sourcename){
 				goto endonerror;//end
 		}
 		readhead++;
-/*writing ins*/
 		if(inssection%2 == 0 && ins >= let && ins <= include){
 //			printf("macro: %s\n", UserInput);
+/*macro's*/
 			switch(ins){
 				case let: if(letbind(sourcefile, readhead, &bindings) == NULL) goto endonerror; break;
 				case enumb:if(enumbind(sourcefile, readhead, &bindings) == NULL) goto endonerror; break;
 				case include: if(includef(sourcefile, readhead, &includes) == NULL) goto endonerror; break;
 			} goto compwhile;//loop
 		}
+/*writing ins*/
 		inssection += ins*2; previns = inssection;
 		mfapp(runfile, &inssection, 1);
 		if(inssection%2 == 1) goto figins;//loop

@@ -579,7 +579,7 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 				case F64:
 					flag.s |= CE*(f64 nrs[0] == f64 nrs[1])
 					        | CG*(f64 nrs[0] >  f64 nrs[1]); break;
-			} break;
+			}; break;
 // sec
 		case sec: if(globalType < F32){
 			switch(globalType){
@@ -601,7 +601,7 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 				case F64:
 					flag.s |= CE*(f64 nrs[0] == f64 nrs[1])
 					        | CS*(f64 nrs[0] <  f64 nrs[1]); break;
-			} break;
+			}; break;
 // ec
 		case ec: switch(globalType){
 				case Chr: case I8: flag.c.e = i8 nrs[0] == i8 nrs[1]; break;
@@ -614,7 +614,7 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 				case U64: flag.c.e = u64 nrs[0] == u64 nrs[1]; break;
 				case F32: flag.c.e = f32 nrs[0] == f32 nrs[1]; break;
 				case F64: flag.c.e = f64 nrs[0] == f64 nrs[1]; break;
-			} break;
+			}; break;
 // cmp
 		case cmp: if(globalType < F32){
 			switch(globalType){
@@ -641,7 +641,7 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 					flag.s = CE*(f64 nrs[0] == f64 nrs[1])
 					       | CS*(f64 nrs[0] <  f64 nrs[1])
 					       | CG*(f64 nrs[0] >  f64 nrs[1]); break;
-			} break;
+			}; break;
 // pec
 		case pec:
 			flag.s = CE*equalnry(args[0], args[1]);
@@ -763,7 +763,7 @@ bool run(file_t* runfile){
 				printf("Type is now %s\n", typeString[(signed char)head]);
 			globalType = head;
 		} else switch(head){
-			case Ce: if(!flag.c.e) goto skip; break;
+			case Ce: if(!flag.c.e) goto skip;;break;
 			case Cs: if(!flag.c.s) goto skip; break;
 			case Cg: if(!flag.c.g) goto skip; break;
 			case Cse:if(!(flag.c.s || flag.c.e)) goto skip; break;
