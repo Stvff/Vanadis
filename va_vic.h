@@ -8,7 +8,7 @@
 char instructionString[][maxKeywordLen] = {
 	"alloc", "free", "push", "pop", "flip", "unf", // 1
 	"staptr", "cdxptr", // 2 
-	"mov", "set", "memv", "rsz", // 3
+	"mov", "set", "memv", "fill", "rsz", // 3
 	"inc", "dec", "add", "sub", "mul", "div", "mod", // 4
 	"and", "or", "xor", "not", "rshf", "lshf", // 5
 	"gc", "sc", "gec", "sec", "ec", "cmp", "pec", // 6
@@ -23,7 +23,7 @@ char instructionString[][maxKeywordLen] = {
 enum instructionEnum {
 	allocst, freest, push, pop, flip, unf, // 1
 	staptr, cdxptr, // 2
-	mov, set, memv, rsz, // 3
+	mov, set, memv, fill, rsz, // 3
 	inc, dec, add, sub, mul, divi, modu, // 4
 	and, or, xor, not, rshf, lshf, // 5
 	gc, sc, gec, sec, ec, cmp, pec, // 6
@@ -38,7 +38,7 @@ enum instructionEnum {
 char instructionKinds[][argumentAmount+1] = {
 	"d___", "d___", "p___", "P___", "d___", "d___", // 1
 	"D___", "D___", // 2
-	"Pp__", "Dd__", "Ppdd", "Pd__", // 3
+	"Pp__", "Dd__", "Ppdd", "Pdd_", "Pd__", // 3
 	"D___", "D___", "Ddd_", "Ddd_", "Ddd_", "Ddd_", "Ddd_", // 4
 	"Ddd_", "Ddd_", "Ddd_", "Dd__", "Ddd_", "Ddd_", // 5
 	"dd__", "dd__", "dd__", "dd__", "dd__", "dd__", "pp__", // 6

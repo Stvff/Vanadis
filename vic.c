@@ -34,6 +34,7 @@ int main(int argc, char** argv){
 			case 'b': sta.te = BINARY_IN | RUN; break;
 			case 't': sta.te = SOURCE_IN; break;
 			case 'd': debugIns = true; debugExpr = true; break;
+			case 'D': debugIns = true; debugExpr = true; debugEnters = true; break;
 			default:
 				printf("Vanadis Interpreter and Compiler\n");
 				printf("Usage: $ vic [options] <files> [vanadis machine stack arguments]\n\n");
@@ -42,6 +43,7 @@ int main(int argc, char** argv){
 				printf("		-b <binary file>               : Runs the binary file.\n");
 				printf("		-t <source file>               : Tests for errors in the source script.\n");
 				printf("		-d                             : Turns on debugging.\n");
+				printf("		-D                             : Turns on step-through debugging.\n");
 				printf("\nIf no options are given, Vanadis will look at the extension of\n");
 				printf("the given file to determine what the appropriate course of action is.\n\n");
 				break;

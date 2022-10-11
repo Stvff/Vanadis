@@ -8,7 +8,7 @@ rules:
 
     ## Instructions
     - statement: "\\b(?i)(alloc|free|push|pop|flip|unf)(?-i)\\b"
-    - statement: "\\b(?i)(mov|set|memv|rsz)(?-i)\\b"
+    - statement: "\\b(?i)(mov|set|memv|fill|rsz)(?-i)\\b"
     - statement: "\\b(?i)(staptr|cdxptr)(?-i)\\b"
     - statement: "\\b(?i)(inc|dec|add|sub|mul|div|mod)(?-i)\\b"
     - statement: "\\b(?i)(and|or|xor|not|rshf|lshf)(?-i)\\b"

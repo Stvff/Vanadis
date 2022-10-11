@@ -14,6 +14,7 @@ union {
 	} c;
 } flag;
 
+bool debugEnters = false;
 bool debugIns = false;
 bool debugExpr = false;
 
@@ -156,7 +157,7 @@ void freemac(){
 
 #ifndef libraryincluded
 bool libraryfunctionexposedtoVanadis(nry_t** args){
-	printf("hello from only this side\n");
+	printf("No external libraries loaded. %p\n", args);
 	return true;
 }
 #else
@@ -187,7 +188,7 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 		if(debugExpr){
 			printf("p: %p, %p\nd: %p, %p\n", regp[0], regp[1], regd[0], regd[1]);
 			printf("I %x: %c, readhead: %d\n", val, operationString[val], readhead);
-			fgetc(stdin);
+			if(debugEnters) fgetc(stdin);
 		}
 		switch(val){
 			case opNoop:
@@ -250,23 +251,27 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 				break;
 // entry, direct
 			case opEntry:
-				regd[0] = regp[1]->base + ((sinteger(regd[0], globalType)) % regp[1]->len);
+				if(regp[1]->len != 0) regd[0] = regp[1]->base + ((sinteger(regd[0], globalType)) % regp[1]->len);
+				else regd[0] = regp[0]->base;
 				regp[0] = NULL;
 				break;
 // entry, relative
 			case opRef:
-				regd[0] = regp[1]->base + ((regp[1]->fst - regp[1]->base + sinteger(regd[0], globalType)) % regp[1]->len);
+				if(regp[1]->len != 0) regd[0] = regp[1]->base + ((regp[1]->fst - regp[1]->base + sinteger(regd[0], globalType)) % regp[1]->len);
+				else regd[0] = regp[0]->base;
 				regp[0] = NULL;
 				break;
 // directAffect
 			case opEntryKeep:
-				regp[1]->fst = regp[1]->base + ((sinteger(regd[0], globalType)) % regp[1]->len);
+				if(regp[1]->len != 0) regp[1]->fst = regp[1]->base + ((sinteger(regd[0], globalType)) % regp[1]->len);
+				else regp[1]->fst = regp[1]->base;
 				regd[0] = regp[1]->fst;
 				regp[0] = NULL;
 				break;
 // relativeAffect
 			case opRefKeep:
-				regp[1]->fst = regp[1]->base + ((regp[1]->fst - regp[1]->base + sinteger(regd[0], globalType)) % regp[1]->len);
+				if(regp[1]->len != 0) regp[1]->fst = regp[1]->base + ((regp[1]->fst - regp[1]->base + sinteger(regd[0], globalType)) % regp[1]->len);
+				else regp[1]->fst = regp[1]->base;
 				regd[0] = regp[1]->fst;
 				regp[0] = NULL;
 				break;
@@ -340,7 +345,7 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 		if(debugExpr){
 			printf("p: %p, %p\nd: %p, %p\n", regp[0], regp[1], regd[0], regd[1]);
 			printf("done solving expressions\n");
-			fgetc(stdin);
+			if(debugEnters) fgetc(stdin);
 		}
 	return ret;
 }
@@ -397,16 +402,23 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 		} break;
 // memv
 		case memv:
-			dummy = (args[0]->base + args[0]->len) - args[0]->fst;
-			silly = (args[1]->base + args[1]->len) - args[1]->fst;
+			dummy = 1 + (args[0]->base + args[0]->len) - args[0]->fst;
+			if(args[1]->len != 0) silly = 1 + args[1]->len - (integer(nrs[2], globalType) % args[1]->len);
+			else silly = 1;
 			if(silly < dummy) dummy = silly;
-			silly = integer(nrs[2], globalType) % args[0]->len;
+			silly = integer(nrs[2], globalType) % (1 + args[1]->len);
 			memmove(args[0]->fst, args[1]->base + silly, integer(nrs[3], globalType)%dummy);
+			break;
+		case fill:
+			dummy = integer(nrs[2], globalType) % (1 + (args[0]->base + args[0]->len) - args[0]->fst);
+			memset(args[0]->fst, u8 nrs[1], dummy);
 			break;
 // rsz
 		case rsz:
 			dummy = integer(nrs[1], globalType);
-			giddy = (args[0]->fst - args[0]->base) % dummy;
+			giddy = args[0]->fst - args[0]->base;
+			if(dummy < giddy && dummy != 0) giddy %= dummy;
+			else giddy = 0;
 			if(dummy > args[0]->len){ silly = args[0]->len;} else silly = -1;
 			remakenry(args[0], dummy);
 			args[0]->fst = args[0]->base + giddy;
@@ -697,7 +709,7 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 			fclose(quicfptr); break;
 // fwrite
 		case fiwrite:
-			if(u8 args[3]->fst == 0) quicfptr = fopen((char*)(args[1]->fst), "wb"); else quicfptr = fopen((char*)(args[1]->fst), "wb+");
+			if(u8 nrs[3] == 0) quicfptr = fopen((char*)(args[1]->fst), "wb"); else quicfptr = fopen((char*)(args[1]->fst), "wb+");
 			if(quicfptr == NULL){ i8 nrs[3] = -1; break;} i8 nrs[3] = 0;
 			fseek(quicfptr, integer(nrs[2], globalType), SEEK_SET); fwrite(args[0]->base, 1, args[0]->len, quicfptr);
 			fclose(quicfptr); break;
@@ -807,7 +819,7 @@ bool run(file_t* runfile){
 		if(debugIns){
 			printf("pos x%lx\n", runfile->pos);
 			printf("stackPtr: %ld, stackFrameOffset: %ld\n", stackPtr, stackFrameOffset);
-			fgetc(stdin);
+			if(debugEnters) fgetc(stdin);
 //			printstate();
 		}
 	}
