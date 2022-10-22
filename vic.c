@@ -33,8 +33,14 @@ int main(int argc, char** argv){
 			case 'c': sta.te = SOURCE_IN | BINARY_OUT; break;
 			case 'b': sta.te = BINARY_IN | RUN; break;
 			case 't': sta.te = SOURCE_IN; break;
-			case 'd': debugIns = true; debugExpr = true; break;
-			case 'D': debugIns = true; debugExpr = true; debugEnters = true; break;
+			case 'd': switch (argv[i][2]) { 
+				case 'i': debugIns = true; break;
+				case 'e': debugExpr = true; break;
+				case 'c': debugCompile = true; break;
+				case 'b': debugEnters = true; break;
+				default: debugIns = true; debugExpr = true; debugCompile = true; break;}
+				break;
+			case 'D': debugIns = true; debugExpr = true; debugCompile = true; debugEnters = true; break;
 			default:
 				printf("Vanadis Interpreter and Compiler\n");
 				printf("Usage: $ vic [options] <files> [vanadis machine stack arguments]\n\n");

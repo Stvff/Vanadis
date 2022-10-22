@@ -6,6 +6,8 @@
 #include "va_vic.h"
 #include "va_run.h"
 
+bool debugCompile = false;
+
 // ######################################################################################## stringlook
 int keywordlook(char string[], int thewordlen, char source[][thewordlen], int* readhead){
 	int item = 0;
@@ -220,7 +222,7 @@ bind_t* enumbind(file_t* file, int i, bind_t* binds){
 		appmemwy(&memowy, " = ", 3);
 		appmemwy(&memowy, memowy.mem + 2, lenwy(memowy.mem));
 		appmemwy(&memowy, "   ", 3);
-		printinttostr(data(&memowy) + lenwy(lenp(&memowy)) - 3, bindcn*typeBylen(globalType));
+		printinttostr(data(&memowy) + lenwy(lenp(&memowy)) - 3, bindcn*typeBylen(enumtype));
 		appmemwy(&memowy, whichref, 2);
 		/* passing it to letbind */
 		memcpy(UserInput, data(&memowy), lenwy(lenp(&memowy)));
@@ -353,6 +355,7 @@ lbl_t* savelabel(file_t* file, char* input, int* readhead, lbl_t* labels, file_t
 	memcpy(labels->definedlabels[labels->labelam-1], input + *readhead, i - *readhead + 1);
 	labels->definedlabels[labels->labelam-1][i - *readhead] = ' ';
 	labels->definedlabels[labels->labelam-1][i - *readhead + 1] = '\0';
+	if(debugCompile) printf("Label '%s' is at 0x%lx\n", labels->definedlabels[labels->labelam-1], labels->labelpos_s[labels->labelam-1]);
 //	printf("done\n");
 	return labels;
 }
@@ -665,9 +668,9 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 				prev = opNrs;
 				break;
 			case 'A'...'Z':
-//				printf("Kind is binding, %c\n%s\n", UserInput[*readhead], UserInput);
+				if(debugCompile) printf("Macro, '%s', expanded to", UserInput);
 				if(insertbind(sourcefile, readhead, bindings) == NULL) goto endonerror;
-//				printf("binding, %s\n", UserInput);
+				if(debugCompile) printf(": '%s'\n", UserInput);
 				break;
 			default:;
 				char tmpcfd = UserInput[*readhead];
