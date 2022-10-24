@@ -49,7 +49,11 @@ int main(int argc, char** argv){
 				printf("		-b <binary file>               : Runs the binary file.\n");
 				printf("		-t <source file>               : Tests for errors in the source script.\n");
 				printf("		-d                             : Turns on debugging.\n");
-				printf("		-D                             : Turns on step-through debugging.\n");
+				printf("		                                 -di: instructions\n");
+				printf("		                                 -de: expressions\n");
+				printf("		                                 -dc: compilation\n");
+				printf("		                                 -db: turn on default breakpoints\n");
+				printf("		-D                             : Turns on all debugging (a lot)\n");
 				printf("\nIf no options are given, Vanadis will look at the extension of\n");
 				printf("the given file to determine what the appropriate course of action is.\n\n");
 				break;

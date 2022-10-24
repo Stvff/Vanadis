@@ -261,10 +261,11 @@ bool equalnry(nry_t* a, nry_t* b){
 }
 
 void printnrydebug(nry_t* src){
-	printf("Debug print nry: %p--------\n", src);
+	printf("Debug print nry: %p --------\n", src);
 	printf("base: %p, fst: %p, len: %lu\n", src->base, src->fst, src->len);
 	printf("base + len: %p\n", src->base + src->len);
-	printf("Debug print nry over --------\n");
+	printf("Actual offset: %lu\n", src->fst - src->base);
+	printf("--------\n");
 }
 
 #endif

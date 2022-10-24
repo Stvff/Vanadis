@@ -164,6 +164,56 @@ bool libraryfunctionexposedtoVanadis(nry_t** args){
 bool libraryfunctionexposedtoVanadis(nry_t** args);
 #endif
 
+bool breakpoint(nry_t** pgst, uint8_t** nrst){
+	yeah:
+	printf("?> ");
+	switch(fgetc(stdin)){
+		case 'h':
+		case '?':
+			printf("i: toggle instruction info\n");
+			printf("e: toggle expression info\n");
+			printf("0: print top item of expression stack\n");
+			printf("1: print other item in expression stack\n");
+			printf("q: quit Vanadis\n");
+			fgetc(stdin);
+			goto yeah;
+			break;
+		case 'I': case 'i': debugIns = !debugIns; break;
+		case 'E': case 'e': debugExpr = !debugExpr; break;
+		case '0':
+			if(nrst[0] != NULL){
+				printf("----\n");
+				printf("%lu\n", integer(nrst[0], globalType));
+				printf("----\n");
+			} else if(pgst[0] != NULL){
+				printnrydebug(pgst[0]);
+				aprintnry(pgst[0], U8, true);
+				printf("----\n");
+			}
+			fgetc(stdin);
+			goto yeah;
+			break;
+		case '1':
+			if(nrst[1] != NULL){
+				printf("----\n");
+				printf("%lu\n", integer(nrst[1], globalType));
+				printf("----\n");
+			} else if(pgst[1] != NULL){
+				printnrydebug(pgst[1]);
+				aprintnry(pgst[1], U8, true);
+				printf("---\n");
+			}
+			fgetc(stdin);
+			goto yeah;
+			break;
+		case 'Q': case 'q': return false; break;
+		case '\r': case '\n': return true; break;
+	}
+	fgetc(stdin);
+	return true;
+}
+
+
 // ######################################################################################## execs
 void stackerror(int64_t ref){
 	fprintf(stderr, "\aInvalid stack reference.\n");
@@ -188,7 +238,7 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 		if(debugExpr){
 			printf("p: %p, %p\nd: %p, %p\n", regp[0], regp[1], regd[0], regd[1]);
 			printf("I %x: %c, readhead: %d\n", val, operationString[val], readhead);
-			if(debugEnters) fgetc(stdin);
+			if(debugEnters) ret = breakpoint(regp, regd);
 		}
 		switch(val){
 			case opNoop:
@@ -337,16 +387,19 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 				regd[0] = (uint8_t*) expr + readhead;
 				readhead += typeBylen(globalType) - 1;
 				break;
+			case opBrk:
+				ret = breakpoint(regp, regd);
+				break;
 		}
 		if(!ret) break;
 	}
 	args[argnr] = regp[0];
 	nrs[argnr] = regd[0];
-		if(debugExpr){
-			printf("p: %p, %p\nd: %p, %p\n", regp[0], regp[1], regd[0], regd[1]);
-			printf("done solving expressions\n");
-			if(debugEnters) fgetc(stdin);
-		}
+	if(debugExpr){
+		printf("p: %p, %p\nd: %p, %p\n", regp[0], regp[1], regd[0], regd[1]);
+		printf("done solving expressions\n");
+		if(debugEnters) ret = breakpoint(regp, regd);
+	}
 	return ret;
 }
 
@@ -418,7 +471,7 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 			dummy = integer(nrs[1], globalType);
 			giddy = args[0]->fst - args[0]->base;
 			if(dummy < giddy && dummy != 0) giddy %= dummy;
-			else giddy = 0;
+//			else giddy = 0;
 			if(dummy > args[0]->len){ silly = args[0]->len;} else silly = -1;
 			remakenry(args[0], dummy);
 			args[0]->fst = args[0]->base + giddy;
@@ -819,7 +872,7 @@ bool run(file_t* runfile){
 		if(debugIns){
 			printf("pos x%lx\n", runfile->pos);
 			printf("stackPtr: %ld, stackFrameOffset: %ld\n", stackPtr, stackFrameOffset);
-			if(debugEnters) fgetc(stdin);
+			if(debugEnters) retbool = breakpoint(NULL, NULL);
 //			printstate();
 		}
 	}

@@ -672,6 +672,11 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 				if(insertbind(sourcefile, readhead, bindings) == NULL) goto endonerror;
 				if(debugCompile) printf(": '%s'\n", UserInput);
 				break;
+			case 'b':
+				dummy = opBrk;
+				section = arrapp(section, u16 section, (char*) &dummy, 1);
+				(u16 section)++;
+				break;
 			default:;
 				char tmpcfd = UserInput[*readhead];
 				if(tmpcfd >= 'a' && tmpcfd <= 'z'){
