@@ -50,6 +50,30 @@ int64_t sinteger(uint8_t* ptr, int type){
 	return 0;
 }
 
+float float32(uint8_t* ptr, int type){
+	switch(type){
+		case Chr...U8: return (float) u8 ptr; break;
+		case I16: case U16: return (float) u16 ptr; break;
+		case I32: case U32: return (float) u32 ptr; break;
+		case I64: case U64: return (float) u64 ptr; break;
+		case F32: return f32 ptr; break;
+		case F64: return (float) f64 ptr; break;
+	}
+	return 0;
+}
+
+double float64(uint8_t* ptr, int type){
+	switch(type){
+		case Chr...U8: return (double) u8 ptr; break;
+		case I16: case U16: return (double) u16 ptr; break;
+		case I32: case U32: return (double) u32 ptr; break;
+		case I64: case U64: return (double) u64 ptr; break;
+		case F32: return (double) f32 ptr; break;
+		case F64: return f64 ptr; break;
+	}
+	return 0;
+}
+
 // ######################################################################################## nry stuff
 typedef struct {
 	uint8_t* base;

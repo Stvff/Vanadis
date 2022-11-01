@@ -328,6 +328,8 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 // length
 			case opLength:
 				regd[0] = (uint8_t*) &regp[0]->len;
+				if(globalType == F32) f32 regd[0] = (float) u64 regd[0];
+				else if(globalType == F64) f64 regd[0] = (double) u64 regd[0];
 				regp[0] = NULL;
 				break;
 // offset
@@ -335,6 +337,8 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 				and ^= 1;
 				regd[0] = (uint8_t*) &ALLd[argnr*2 + and];
 				u64 regd[0] = regp[0]->fst - regp[0]->base;
+				if(globalType == F32) f32 regd[0] = (float) u64 regd[0];
+				else if(globalType == F64) f64 regd[0] = (double) u64 regd[0];
 				regp[0] = NULL;
 				break;
 // sizeof
@@ -343,6 +347,8 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 				and ^= 1;
 				regd[0] = (uint8_t*) &ALLd[argnr*2 + and];
 				u64 regd[0] = dummy * typeBylen(globalType);
+				if(globalType == F32) f32 regd[0] = (float) i64 regd[0];
+				else if(globalType == F64) f64 regd[0] = (double) i64 regd[0];
 				regp[0] = NULL;
 				break;
 // swap
@@ -387,6 +393,7 @@ bool evalexpr(char* expr, uint16_t exprlen, nry_t** args, uint8_t** nrs, nry_t* 
 				regd[0] = (uint8_t*) expr + readhead;
 				readhead += typeBylen(globalType) - 1;
 				break;
+// brk
 			case opBrk:
 				ret = breakpoint(regp, regd);
 				break;
@@ -453,6 +460,19 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 			case I32: case U32: case F32: u32 nrs[0] = u32 nrs[1]; break;
 			case I64: case U64: case F64: u64 nrs[0] = u64 nrs[1]; break;
 		} break;
+// cast
+		case cast: switch( integer(nrs[2], globalType) ){
+			case Chr: case I8: i8 nrs[0] = sinteger(nrs[1], globalType); break;
+			case U8:   u8 nrs[0] = integer(nrs[1], globalType);  break;
+			case I16: i16 nrs[0] = sinteger(nrs[1], globalType); break;
+			case U16: u16 nrs[0] = integer(nrs[1], globalType);  break;
+			case I32: i32 nrs[0] = sinteger(nrs[1], globalType); break;
+			case U32: u32 nrs[0] = integer(nrs[1], globalType);  break;
+			case I64: i64 nrs[0] = sinteger(nrs[1], globalType); break;
+			case U64: u64 nrs[0] = integer(nrs[1], globalType);  break;
+			case F32: f32 nrs[0] = float32(nrs[1], globalType);  break;
+			case F64: f64 nrs[0] = float64(nrs[1], globalType);  break;
+		} break;
 // memv
 		case memv:
 			dummy = 1 + (args[0]->base + args[0]->len) - args[0]->fst;
@@ -462,6 +482,7 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 			silly = integer(nrs[2], globalType) % (1 + args[1]->len);
 			memmove(args[0]->fst, args[1]->base + silly, integer(nrs[3], globalType)%dummy);
 			break;
+// fill
 		case fill:
 			dummy = integer(nrs[2], globalType) % (1 + (args[0]->base + args[0]->len) - args[0]->fst);
 			memset(args[0]->fst, u8 nrs[1], dummy);
@@ -471,7 +492,7 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 			dummy = integer(nrs[1], globalType);
 			giddy = args[0]->fst - args[0]->base;
 			if(dummy < giddy && dummy != 0) giddy %= dummy;
-//			else giddy = 0;
+		  //else giddy = 0;
 			if(dummy > args[0]->len){ silly = args[0]->len;} else silly = -1;
 			remakenry(args[0], dummy);
 			args[0]->fst = args[0]->base + giddy;
@@ -597,8 +618,8 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 			case F64: f64 nrs[0] = u64 nrs[1] << u8 nrs[2]; break;
 		} break;
 
-// gc
-		case gc: switch(globalType){
+// gcmp
+		case gcmp: switch(globalType){
 				case Chr: case I8: flag.c.g = i8 nrs[0] > i8 nrs[1]; break;
 				case U8: flag.c.g = u8 nrs[0] > u8 nrs[1]; break;
 				case I16: flag.c.g = i16 nrs[0] > i16 nrs[1]; break;
@@ -610,8 +631,8 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 				case F32: flag.c.g = f32 nrs[0] > f32 nrs[1]; break;
 				case F64: flag.c.g = f64 nrs[0] > f64 nrs[1]; break;
 			} break;
-// sc
-		case sc: switch(globalType){
+// scmp
+		case scmp: switch(globalType){
 				case Chr: case I8: flag.c.s = i8 nrs[0] < i8 nrs[1]; break;
 				case U8: flag.c.s = u8 nrs[0] < u8 nrs[1]; break;
 				case I16: flag.c.s = i16 nrs[0] < i16 nrs[1]; break;
@@ -623,8 +644,8 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 				case F32: flag.c.s = f32 nrs[0] < f32 nrs[1]; break;
 				case F64: flag.c.s = f64 nrs[0] < f64 nrs[1]; break;
 			} break;
-// gec
-		case gec: if(globalType < F32){
+// gecmp
+		case gecmp: if(globalType < F32){
 			switch(globalType){
 				case Chr...U8: dummy = u8 nrs[0]; silly = u8 nrs[1]; break;
 				case I16: case U16: dummy = u16 nrs[0]; silly = u16 nrs[1]; break;
@@ -645,8 +666,8 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 					flag.s |= CE*(f64 nrs[0] == f64 nrs[1])
 					        | CG*(f64 nrs[0] >  f64 nrs[1]); break;
 			}; break;
-// sec
-		case sec: if(globalType < F32){
+// secmp
+		case secmp: if(globalType < F32){
 			switch(globalType){
 				case Chr...U8: dummy = u8 nrs[0]; silly = u8 nrs[1]; break;
 				case I16: case U16: dummy = u16 nrs[0]; silly = u16 nrs[1]; break;
@@ -667,8 +688,8 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 					flag.s |= CE*(f64 nrs[0] == f64 nrs[1])
 					        | CS*(f64 nrs[0] <  f64 nrs[1]); break;
 			}; break;
-// ec
-		case ec: switch(globalType){
+// ecmp
+		case ecmp: switch(globalType){
 				case Chr: case I8: flag.c.e = i8 nrs[0] == i8 nrs[1]; break;
 				case U8: flag.c.e = u8 nrs[0] == u8 nrs[1]; break;
 				case I16: flag.c.e = i16 nrs[0] == i16 nrs[1]; break;
@@ -707,8 +728,8 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 					       | CS*(f64 nrs[0] <  f64 nrs[1])
 					       | CG*(f64 nrs[0] >  f64 nrs[1]); break;
 			}; break;
-// pec
-		case pec:
+// pecmp
+		case pecmp:
 			flag.s = CE*equalnry(args[0], args[1]);
 			break;
 

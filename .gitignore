@@ -4,3 +4,4 @@ vic.exe
 *.out
 *.vco
 *.so
+scripts/s/*

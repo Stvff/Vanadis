@@ -773,11 +773,11 @@ bool compile(file_t* sourcefile, file_t* runfile, char* sourcename){
 				goto endonerror;//end
 		}
 		readhead++;
-		if(inssection%2 == 0 && ins >= let && ins <= include){
+		if(inssection%2 == 0 && ins >= def && ins <= include){
 //			printf("macro: %s\n", UserInput);
 /*macro's*/
 			switch(ins){
-				case let: if(letbind(sourcefile, readhead, &bindings) == NULL) goto endonerror; break;
+				case def: if(letbind(sourcefile, readhead, &bindings) == NULL) goto endonerror; break;
 				case enumb:if(enumbind(sourcefile, readhead, &bindings) == NULL) goto endonerror; break;
 				case include: if(includef(sourcefile, readhead, &includes) == NULL) goto endonerror; break;
 			} goto compwhile;//loop

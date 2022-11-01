@@ -7,7 +7,7 @@ set Limit, 600 000 000
 time Start
 :loop, u64
 	inc I
-	sc I, Limit
+	scmp I, Limit
 	Cs jmp loop
 dprint I, 0
 time Endtime

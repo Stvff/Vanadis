@@ -8,11 +8,11 @@ rules:
 
     ## Instructions
     - statement: "\\b(?i)(alloc|free|push|pop|flip|unf)(?-i)\\b"
-    - statement: "\\b(?i)(mov|set|memv|fill|rsz)(?-i)\\b"
+    - statement: "\\b(?i)(mov|set|cast|memv|fill|rsz)(?-i)\\b"
     - statement: "\\b(?i)(staptr|cdxptr)(?-i)\\b"
     - statement: "\\b(?i)(inc|dec|add|sub|mul|div|mod)(?-i)\\b"
     - statement: "\\b(?i)(and|or|xor|not|rshf|lshf)(?-i)\\b"
-    - statement: "\\b(?i)(gc|sc|gec|sec|ec|cmp|pec)(?-i)\\b"
+    - statement: "\\b(?i)(gcmp|scmp|gecmp|secmp|ecmp|cmp|pecmp)(?-i)\\b"
     - statement: "\\b(?i)(input|print|dprint|lib)(?-i)\\b"
     - statement: "\\b(?i)(fread|fwrite|flen|time)(?-i)\\b"
     - statement: "\\b(?i)(ex)(?-i)\\b"
