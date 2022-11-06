@@ -18,6 +18,16 @@ bool debugEnters = false;
 bool debugIns = false;
 bool debugExpr = false;
 
+typedef struct {
+	int mglobalType;
+	nry_t** mstack;
+	nry_t** mcodex;
+	int64_t mstackPtr;
+	int64_t mcodexPtr;
+	int64_t mstackFrameOffset;
+	bool ret;
+} VM;
+
 int STANDARDtype = I32;
 int globalType;
 nry_t** stack;
@@ -156,12 +166,12 @@ void freemac(){
 }
 
 #ifndef libraryincluded
-bool libraryfunctionexposedtoVanadis(nry_t** args){
-	printf("No external libraries loaded. %p\n", args);
-	return true;
+VM libraryfunctionexposedtoVanadis(VM themachine, nry_t** args, uint8_t** nrs){
+	printf("No external libraries loaded. %p %p %p\n", &themachine, args, nrs);
+	return themachine;
 }
 #else
-bool libraryfunctionexposedtoVanadis(nry_t** args);
+VM libraryfunctionexposedtoVanadis(VM themachine, nry_t** args, uint8_t** nrs);
 #endif
 
 bool breakpoint(nry_t** pgst, uint8_t** nrst){
@@ -772,7 +782,12 @@ bool execute(char ins, nry_t** args, uint8_t** nrs){
 		case print: aprintnry(args[0], globalType, u8 nrs[1] == 0); break;
 
 // lib
-		case lib: retbool &= libraryfunctionexposedtoVanadis(args); break;
+		case lib:
+			(VM){globalType, stack, codex, stackPtr, codexPtr, stackFrameOffset, retbool}
+			= libraryfunctionexposedtoVanadis(
+			(VM){globalType, stack, codex, stackPtr, codexPtr, stackFrameOffset, retbool}
+			, args, nrs);
+			break;
 
 // firead
 		case firead:

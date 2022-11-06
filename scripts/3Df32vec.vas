@@ -1,0 +1,135 @@
+
+# Do Not import this script together with the 3Df64vec one, the X, Y and Z clash kekw
+
+jmp 3DF32VEC_END
+
+def X = 0 # 0
+def Y = 4 # 1t
+def Z = 8 # 2t
+
+# sta:( 4x4matr 3Df32vec -- 4x4matr transformed3Df32vec )
+:transf32orm, f32
+	def TraM = -2$
+	def Tres = -1$
+	def Trav =  0$
+	def M00 = 0 ; def M10 = 1t; def M20 = 2t ; def Mtx = 3t
+	def M01 = 4t; def M11 = 5t; def M21 = 6t ; def Mty = 7t
+	def M02 = 8t; def M12 = 9t; def M22 = 10t; def Mtz = 11t
+	#[[ M00 M10 M20 Mtx ]    [ X ]   [ M00*X + M10*Y + M20*Z + Mtx ]
+	# [ M01 M11 M21 Mty ]  . [ Y ] = [ M01*X + M11*Y + M21*Z + Mty ]
+	# [ M02 M12 M22 Mtz ]    [ Z ]   [ M02*X + M12*Y + M22*Z + Mtz ]
+	# [  0   0   0   1  ]]   [ 1 ]   [               1             ]
+	push 0@
+	def TD = Trav<3t>
+	rsz 0@, 4t
+	mul TD, TraM<M00>, Trav<X>
+	mul Tres<X> , TraM<M10>, Trav<Y>
+	add Tres<X>, Tres<X>, TD
+	mul TD, TraM<M20>, Trav<Z>
+	add TD, TD, TraM<Mtx>
+	add Tres<Y>, Tres<Z>, TD
+
+	mul TD, TraM<M01>, Trav<X>
+	mul Tres<Y> , TraM<M11>, Trav<Y>
+	add Tres<Y>, Tres<Y>, TD
+	mul TD, TraM<M21>, Trav<Z>
+	add TD, TD, TraM<Mty>
+	add Tres<Y>, Tres<Y>, TD
+
+	mul TD, TraM<M02>, Trav<X>
+	mul Tres<Z> , TraM<M12>, Trav<Y>
+	add Tres<Z>, Tres<Z>, TD
+	mul TD, TraM<M22>, Trav<Z>
+	add TD, TD, TraM<Mtz>
+	add Tres<Z>, Tres<Z>, TD
+	free 1
+ret
+
+# sta:( 3Df32vec1 3Df32vec2 3Df32vec3 -- normal)
+:f32trianormal, f32
+	def Vert1 = -3$
+	def Vert2 = -2$
+	def Vert3 = -1$
+	push Vert3
+	push Vert2
+	call sub3Df32vec
+
+	push Vert1
+	push Vert3
+	call sub3Df32vec
+
+	call cross3Df32vec
+	push 0@
+	call len3Df32vec
+	call sdiv3Df32vec
+ret
+
+# sta:( 3Df32vec1 3Df32vec2 -- 3Df32vec2 )
+:cross3Df32vec, f32
+	# [ X1 ]   [ X2 ]   [ Y1*Z2 - Z1*Y2 ]
+	# [ Y1 ] x [ Y2 ] = [ Z1*X2 - X1*Z2 ]
+	# [ Z1 ]   [ Z2 ]   [ X1*Y2 - Y1*X2 ]
+	alloc 1
+	def CrossV1 = -2$
+	def CrossV2 = -1$
+	def CrossRes = 0$
+	rsz CrossRes, 4t
+	mul CrossRes<X>, CrossV1<Y>, CrossV2<Z>
+	mul CrossRes<3t>, CrossV1<Z>, CrossV2<Y>
+	sub CrossRes<X>, CrossRes<X>, CrossRes<3t>
+
+	mul CrossRes<Y>, CrossV1<Z>, CrossV2<X>
+	mul CrossRes<3t>, CrossV1<X>, CrossV2<Z>
+	sub CrossRes<Y>, CrossRes<Y>, CrossRes<3t>
+
+	mul CrossRes<Z>, CrossV1<X>, CrossV2<Y>
+	mul CrossRes<3t>, CrossV1<Y>, CrossV2<Z>
+	sub CrossRes<Z>, CrossRes<Z>, CrossRes<3t>
+	rsz CrossRes, 3t
+	pop CrossV1
+	free 1
+ret
+
+# sta:( 3Df32vec nr -- 3Df32vec/nr )
+:sdiv3Df32vec, f32
+	div -2$<X>, -2$<X>, -1$!
+	div -2$<Y>, -2$<Y>, -1$!
+	div -2$<Z>, -2$<Z>, -1$!
+	free 1
+ret
+
+# sta:( 3Df32vec1 3Df32vec2 -- 3Df32vec1-3Df32vec2 )
+:sub3Df32vec, f32
+	sub -2$<X>, -2$<X>, -1$<X>
+	sub -2$<Y>, -2$<Y>, -1$<Y>
+	sub -2$<Z>, -2$<Z>, -1$<Z>
+	free 1
+ret
+
+# sta:( 3Df32vec -- length )
+:len3Df32vec, f32
+	mul -1$<X>, -1$<X>, -1$<X> # X^2
+	mul -1$<Y>, -1$<Y>, -1$<Y> # Y^2
+	mul -1$<Z>, -1$<Z>, -1$<Z> # Z^2
+	add -1$<X>, -1$<X>, -1$<Y> # X^2 + Y^2
+	add -1$<X>, -1$<X>, -1$<Z> # ... + Z^2
+	rsz -1$, 1t
+	call sqrtf32
+ret
+
+# sta:( stl -- stl vertex1 vertex2 vertex2 )
+:getf32vertices, f32
+	alloc 3
+	rsz 0$, 3t; rsz 1$, 3t; rsz 2$, 3t
+	ex -1$<3t>* # skip normal
+	memv 0$, -1$, -1$.o, 3t
+	ex -1$<3t>*
+	memv 1$, -1$, -1$.o, 3t
+	ex -1$<3t>*
+	memv 2$, -1$, -1$.o, 3t
+	ex -1$<-9t>* # return to beginning of triangle
+ret
+
+import math.vas
+
+:3DF32VEC_END

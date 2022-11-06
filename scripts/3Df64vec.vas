@@ -1,0 +1,160 @@
+
+# Do Not import this script together with the 3Df32vec one, several def's clash
+
+jmp 3DF64VEC_END
+
+def X = 0 # 0
+def Y = 8 # 1t
+def Z = 12 # 2t
+
+# sta:( 4x4f64matr 3Df64vec -- 4x4f64matr transformed3Df64vec )
+:transf64orm, f64
+	def TraM = -2$
+	def Tres = -1$
+	def Trav =  0$
+	enum M00 M10 M20 Mtx    M01 M11 M21 Mty    M02 M12 M22 Mtz = TraM<t, f64
+	#[[ M00 M10 M20 Mtx ]    [ X ]   [ M00*X + M10*Y + M20*Z + Mtx ]
+	# [ M01 M11 M21 Mty ]  . [ Y ] = [ M01*X + M11*Y + M21*Z + Mty ]
+	# [ M02 M12 M22 Mtz ]    [ Z ]   [ M02*X + M12*Y + M22*Z + Mtz ]
+	# [  0   0   0   1  ]]   [ 1 ]   [               1             ]
+	push 0@
+	def TD = Trav<3t>
+	rsz 0@, 4t
+	mul TD, M00, Trav<X>
+	mul Tres<X> , M10, Trav<Y>
+	add Tres<X>, Tres<X>, TD
+	mul TD, M20, Trav<Z>
+	add TD, TD, Mtx
+	add Tres<Y>, Tres<Z>, TD
+
+	mul TD, M01, Trav<X>
+	mul Tres<Y> , M11, Trav<Y>
+	add Tres<Y>, Tres<Y>, TD
+	mul TD, M21, Trav<Z>
+	add TD, TD, Mty
+	add Tres<Y>, Tres<Y>, TD
+
+	mul TD, M02, Trav<X>
+	mul Tres<Z> , M12, Trav<Y>
+	add Tres<Z>, Tres<Z>, TD
+	mul TD, M22, Trav<Z>
+	add TD, TD, Mtz
+	add Tres<Z>, Tres<Z>, TD
+	free 1
+ret
+
+# sta:( 3Df64vec1 3Df64vec2 3Df64vec3 -- normal)
+:f64trianormal, f64
+	def Vert1 = -3$
+	def Vert2 = -2$
+	def Vert3 = -1$
+	push Vert3
+	push Vert2
+	call sub3Df64vec
+
+	push Vert1
+	push Vert3
+	call sub3Df64vec
+
+	call cross3Df64vec
+	push 0@
+	call len3Df64vec
+	call sdiv3Df64vec
+ret
+
+# sta:( 3Df64vec1 3Df64vec2 -- 3Df64vec2 )
+:cross3Df64vec, f64
+	# [ X1 ]   [ X2 ]   [ Y1*Z2 - Z1*Y2 ]
+	# [ Y1 ] x [ Y2 ] = [ Z1*X2 - X1*Z2 ]
+	# [ Z1 ]   [ Z2 ]   [ X1*Y2 - Y1*X2 ]
+	alloc 1
+	def CrossV1 = -2$
+	def CrossV2 = -1$
+	def CrossRes = 0$
+	rsz CrossRes, 4t
+	mul CrossRes<X>, CrossV1<Y>, CrossV2<Z>
+	mul CrossRes<3t>, CrossV1<Z>, CrossV2<Y>
+	sub CrossRes<X>, CrossRes<X>, CrossRes<3t>
+
+	mul CrossRes<Y>, CrossV1<Z>, CrossV2<X>
+	mul CrossRes<3t>, CrossV1<X>, CrossV2<Z>
+	sub CrossRes<Y>, CrossRes<Y>, CrossRes<3t>
+
+	mul CrossRes<Z>, CrossV1<X>, CrossV2<Y>
+	mul CrossRes<3t>, CrossV1<Y>, CrossV2<Z>
+	sub CrossRes<Z>, CrossRes<Z>, CrossRes<3t>
+	rsz CrossRes, 3t
+	pop CrossV1
+	free 1
+ret
+
+# sta:( 3Df64vec nr -- 3Df64vec/nr )
+:sdiv3Df64vec, f64
+	div -2$<X>, -2$<X>, -1$!
+	div -2$<Y>, -2$<Y>, -1$!
+	div -2$<Z>, -2$<Z>, -1$!
+	free 1
+ret
+
+# sta:( 3Df64vec1 3Df64vec2 -- 3Df64vec1-3Df64vec2 )
+:sub3Df64vec, f64
+	sub -2$<X>, -2$<X>, -1$<X>
+	sub -2$<Y>, -2$<Y>, -1$<Y>
+	sub -2$<Z>, -2$<Z>, -1$<Z>
+	free 1
+ret
+
+# sta:( 3Df64vec -- length )
+:len3Df64vec, f64
+	mul -1$<X>, -1$<X>, -1$<X> # X^2
+	mul -1$<Y>, -1$<Y>, -1$<Y> # Y^2
+	mul -1$<Z>, -1$<Z>, -1$<Z> # Z^2
+	add -1$<X>, -1$<X>, -1$<Y> # X^2 + Y^2
+	add -1$<X>, -1$<X>, -1$<Z> # ... + Z^2
+	rsz -1$, 1t
+	call sqrtf64
+ret
+
+# sta:( stl -- stl vertex1 vertex2 vertex3 )
+:getf64vertices, u8
+	alloc 3
+	f64 rsz 0$, 3t; rsz 1$, 3t; rsz 2$, 3t
+	f32 ex -1$<3t>* # skip normal
+	cast 0$!, -1$!, 10
+	cast 0$<8>, -1$<4>, 10
+	cast 0$<16>, -1$<8>, 10
+	ex -1$<3t>*
+	cast 1$!, -1$!, 10
+	cast 1$<8>, -1$<4>, 10
+	cast 1$<16>, -1$<8>, 10
+	ex -1$<3t>*
+	cast 2$!, -1$!, 10
+	cast 3$<8>, -1$<4>, 10
+	cast 4$<16>, -1$<8>, 10
+	ex -1$<-9t>* # return to beginning of triangle
+ret
+
+# sta:( stl vertex1 vertex2 vertex3 -- stl )
+:setf64vertices, f32
+	ex -4$<3t>* # skip normal
+	f64
+	cast -4$!, -3$!, 9
+	cast -4$<4>, -3<8>, 9
+	cast -4$<8>, -3<16>, 9
+	f32 ex -4$<3t>*
+	f64
+	cast -4$!, -2$!, 9
+	cast -4$<4>, -2<8>, 9
+	cast -4$<8>, -2<16>, 9
+	f32 ex -4$<3t>*
+	f64
+	cast -4$!, -1$!, 9
+	cast -4$<4>, -1<8>, 9
+	cast -4$<8>, -1<16>, 9
+	f32 ex -4$<3t>*
+	ex -4$<-9t>*
+ret
+
+import math.vas
+
+:3DF64VEC_END

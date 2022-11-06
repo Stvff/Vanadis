@@ -42,9 +42,9 @@ char instructionKinds[][argumentAmount+1] = {
 	"D___", "D___", "Ddd_", "Ddd_", "Ddd_", "Ddd_", "Ddd_", // 4
 	"Ddd_", "Ddd_", "Ddd_", "Dd__", "Ddd_", "Ddd_", // 5
 	"dd__", "dd__", "dd__", "dd__", "dd__", "dd__", "pp__", // 6
-	"Ppd_", "dd__", "pd__", "PPPp", // 7
+	"Ppd_", "dd__", "pd__", "vvvv", // 7
 	"PpdD", "ppdD", "DpD_", "D___", // 8
-	"d___" // 9
+	"vvvv" // 9
 };
 
 char operationString[] = {

@@ -88,7 +88,7 @@ bool checkkinds(signed char ins, char* kinds, file_t* file){
 	bool good = true;
 //	printf("checking kinds: %s %s? %s\n", instructionString[ins], kinds, instructionKinds[ins]);
 	for(signed char i = 0; (i < argumentAmount) && good; i++)
-		good = (kinds[i] == instructionKinds[ins][i]) || (kinds[i] + 0x20 == instructionKinds[ins][i]);
+		good = (kinds[i] == instructionKinds[ins][i]) || (kinds[i] + 0x20 == instructionKinds[ins][i]) || ('v' == instructionKinds[ins][i]);
 	if(good) return good;
 	int newlines = 0;
 	for(uint64_t i = 0; i < file->pos; i++)

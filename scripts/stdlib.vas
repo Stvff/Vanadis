@@ -1,0 +1,16 @@
+
+jmp STDLIB_END
+
+:fload, u8 # mst:( filename ' -- file )
+	alloc 2
+	u64 flen 0$!, -1$, 1$!
+	i8 cmp 1$!, -1 # check if file exists
+		Ce free 2
+		chr Ce print "This file can not be opened: ", 1
+		Ce print -1$, 0
+		Ce ret
+	u64 fread 0$, -1$, 0, 1$!
+	u8 free 1; flip 1; free 1; unf 1 # mst:( filename 'file errorcheck -- 'file )
+ret
+
+:STDLIB_END

@@ -1,0 +1,36 @@
+call fload
+def File = 0$
+def Normal = 0 # 4 8
+def V1 = 12 # 16 20
+def V2 = 24 # 28 32
+def V3 = 36 # 40 44
+def Attr = 48
+chr print "Amount of triangles: ", 1
+u32 dprint File[80], 0
+ex File[84]*
+dprint File.o, 0
+
+chr print "Normal:", 0
+alloc 1; rsz 1$, 12
+f32 memv 1$, File, File.o, 3t
+print 1$, 0
+free 1
+
+chr print "Vertices:", 0
+call getvertices
+f32
+print 1$, 0
+print 2$, 0
+print 3$, 0
+chr print "Attribute:", 0
+u16 dprint File<Attr>, 0
+
+chr print "Calculated Normal:", 0
+call trianormal
+f32 print 0@, 0
+
+jmp END
+
+import stdlib.vas
+
+:END

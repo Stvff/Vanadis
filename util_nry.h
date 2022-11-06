@@ -15,6 +15,7 @@
 #define f64 *(double*)
 
 enum datatypes {Chr = 0, I8, U8, I16, U16, I32, U32, I64, U64, F32, F64};
+//                    0   1   2    3    4    5    6    7    8    9   10
 
 int typeBylen(int type){
 	switch(type){

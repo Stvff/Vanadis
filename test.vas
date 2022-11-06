@@ -2,7 +2,7 @@ chr print "God's in his heaven-- / All's right with the world.", 0
 def Abc = 0$[0]
 enum Dfe Ghi Jkl Mno = 0$, u8
 alloc 4
-lib 0$, 1$, 2$, 3$
+lib 3^
 u8 rsz Abc~, 4t
 u64 set Dfe, 239804832534834098234
 u8 dprint Ghi, 0

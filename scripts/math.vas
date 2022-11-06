@@ -1,0 +1,12 @@
+# THIS NEEDS MATH INSTALLED AS LIBRARY TO VANADIS, THIS IS JUST A WRAPPER
+jmp MATH_END
+
+:sqrtf32, f32
+	lib "s32", -1$!
+ret
+
+:sqrtf64, f64
+	lib "s64", -1$!
+ret
+
+:MATH_END
