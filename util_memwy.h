@@ -39,7 +39,7 @@ size_t allocmemwy(memowy_t* mp, void* src, uint16_t len){
 	mp->used += len + 4; // 2*sizeof(uint16_t)
 	while (mp->used > mp->avai) {
 		mp->avai += MEMOWYBUF;
-		mp->mem = realloc(mp->mem, mp->avai); 
+		mp->mem = realloc(mp->mem, mp->avai);
 	}
 	memcpy(mp->mem + mp->used - (len + 4), &len, 2);
 	memcpy(mp->mem + mp->used - 2, &len, 2);
@@ -58,7 +58,7 @@ size_t allocstrmemwy(memowy_t* mp, void* src, uint16_t slen){
 	mp->used += alen + 4; // 2*sizeof(uint16_t)
 	while (mp->used > mp->avai) {
 		mp->avai += MEMOWYBUF;
-		mp->mem = realloc(mp->mem, mp->avai); 
+		mp->mem = realloc(mp->mem, mp->avai);
 	}
 	memcpy(mp->mem + mp->used - (alen + 4), &alen, 2);
 	memcpy(mp->mem + mp->used - 2, &alen, 2);
