@@ -12,11 +12,11 @@ jmp MAIN
 	def Old = -1$;
 	def New = 0$
 	mov New, Old[0]*~
-	enum Gr1 Gr2 Length = 1$, u8
+	enum:u8 Gr1 Gr2 Length = 1$
 	sub Length, New.l, 2
 	jmp itercon
 	# a b c, !((a & b) & c) & (b | c)
-	enum A B C = Old<, u8
+	enum:u8 A B C = Old<
 	:iterfor, u8
 		or Gr1, B, C
 		and Gr2, A, B

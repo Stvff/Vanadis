@@ -12,7 +12,7 @@ def Z = 8 # 2t
 	def TraM = -2$
 	def Tres = -1$
 	def Trav =  0$
-	enum M00 M10 M20 Mtx    M01 M11 M21 Mty    M02 M12 M22 Mtz = TraM<, f32
+	enum:f32 M00 M10 M20 Mtx    M01 M11 M21 Mty    M02 M12 M22 Mtz = TraM<
 	#[[ M00 M10 M20 Mtx ]    [ X ]   [ M00*X + M10*Y + M20*Z + Mtx ]
 	# [ M01 M11 M21 Mty ]  . [ Y ] = [ M01*X + M11*Y + M21*Z + Mty ]
 	# [ M02 M12 M22 Mtz ]    [ Z ]   [ M02*X + M12*Y + M22*Z + Mtz ]

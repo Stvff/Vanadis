@@ -50,7 +50,7 @@ int labellook(char* string, char** source){
 }
 
 // ######################################################################################## errors and such
-void error(char* errormessage, int readhead, file_t* file){
+void* error(char* errormessage, int readhead, file_t* file){
 	int newlines = 0;
 	for(uint64_t i = 0; i < file->pos; i++)
 		if(file->mfp[i] == '\n') newlines++;
@@ -62,6 +62,7 @@ void error(char* errormessage, int readhead, file_t* file){
 			fprintf(stderr, "%c", UserInput[i - skip]);
 		else fprintf(stderr, " ");
 	fprintf(stderr, "<^>\n");
+	return NULL;
 }
 
 char* templkindsw(char thing[4][14], char inp){
@@ -129,10 +130,9 @@ void* includef(file_t* desfile, int i, memowy_t* includes){
 	/* opening and inserting file */
 	file_t srcfile = {0, 0, NULL};
 	quicmfptr = mfopen(includes->mem + newinclude + 2, &srcfile);
-	if(quicmfptr == NULL){
-		error("", i, desfile);
-		return NULL;
-	}
+	if(quicmfptr == NULL)
+		return error("", i, desfile);
+
 	srcfile = *quicmfptr;
 	mfins(desfile, desfile->pos, srcfile.mfp, srcfile.len);
 	mfclose(&srcfile);
@@ -140,13 +140,37 @@ void* includef(file_t* desfile, int i, memowy_t* includes){
 }
 
 //##################################################################################### binds
-typedef struct {
-	uint32_t bindam;
-	char** binds;
-	char** resos;
-} bind_t;
 
-bind_t* letbind(file_t* file, int i, bind_t* binds);
+memowy_t* letbind(file_t* file, int i, memowy_t* binds){
+	SkipSpaces(UserInput, userInputLen, &i);
+	if(UserInput[i] < 'A' || UserInput[i] > 'Z')
+		return error("\aBindings must start with a capital letter.\n", i, file);
+
+	int begin = i;
+	while(IsAlph(UserInput + i) || IsNr(UserInput + i) || UserInput[i] == '_')
+		i++;
+
+	binds->pos = allocstrmemwy(binds, UserInput + begin, i - begin);
+
+	while(UserInput[i] != '=' && !EndLine(UserInput + i)) i++;
+	if(UserInput[i] != '='){
+		freememwy(binds);
+		return error("\aTo assign a binding, use '='", i, file);
+	}
+	i++;
+	SkipSpaces(UserInput, userInputLen, &i);
+	if(EndLine(UserInput + i)){
+		freememwy(binds);
+		return error("\aNo binding", i, file);
+	}
+	begin = i;
+	while(!EndLine(UserInput + i)) i++;
+	binds->pos = allocstrmemwy(binds, UserInput + begin, i - begin);
+
+/*	It would be proper to check if there are undefined bindings being used here.*/
+/*	Then again, this way you can do def A = B[4]; def B = 2$; So that's worth something, I guess.*/
+	return binds;
+}
 
 int64_t psi(int64_t g,int64_t h,int64_t n){
 	return (n % (int64_t)pow((float)g, (float)(h+1)))/(int64_t)pow((float)g,(float)h);
@@ -165,162 +189,93 @@ uint8_t printinttostr(char* string, uint8_t integ){
 	return integ;
 }
 
-bind_t* enumbind(file_t* file, int i, bind_t* binds){
+memowy_t* enumbind(file_t* file, int i, memowy_t* binds){
+	/* checking the specific type of the enum */
+	int enumtype = globalType;
+	if(UserInput[i] == ':'){
+		i++;
+		enumtype = keywordlook(UserInput, 4, typeString, &i);
+		if(enumtype == -1)
+			return error("\aInvalid type", i, file);
+		i++;
+	}
 	/* getting the bindbase */
 	int bbase = delimstrlen(UserInput, '=');
-	if(UserInput[bbase] != '='){
-		error("\aTo assign a binding, use '='", bbase, file);
-		return NULL;
-	}
+	if(UserInput[bbase] != '=')
+		return error("\aTo assign a binding, use '='", bbase, file);
+
 	bbase++; SkipSpaces(UserInput, userInputLen, &bbase);
-	int bbaselen = delimstrlen(UserInput + bbase, ',');
-	if(bbaselen == 0){
-		error("\aNo binding", bbase + bbaselen, file);
-		return NULL;
-	}
-	char whichref[2] = {UserInput[bbase + bbaselen - 1] == '<'?'>':']', '\0'};
-	/* saving UserInput and the bindbase */
-	memowy_t memowy = {MEMOWYBUF, 0, 0, malloc(MEMOWYBUF)};
+	int bbaselen = strlen(UserInput + bbase);
+	if(bbaselen == 0)
+		return error("\aNo binding", bbase + bbaselen, file);
+
+	char whichref[5] = {' ',
+						' ',
+						' ',
+						UserInput[bbase + bbaselen - 1] == '<'?'>':']',
+						'\0'};
+	/* saving the bindbase */
+	memowy_t memowy = {0, 0, 0, NULL};
 	allocmemwy(&memowy, UserInput + bbase, bbaselen);
-	allocmemwy(&memowy, UserInput, userInputLen);
-	/* splitting on spaces and saving them */
+	appmemwy(&memowy, whichref, 5);
+	/* splitting on spaces and making the bindings themselves */
 	int bindlen;
-	int bindam = 0;
+	short bindcn = 0;
 	SkipSpaces(UserInput, userInputLen, &i);
 	do{
 		if(UserInput[i] < 'A' || UserInput[i] > 'Z'){
-			error("\aBindings must start with a capital letter.\n", i, file);
 			free(memowy.mem);
-			return NULL;
+			return error("\aBindings must start with a capital letter.\n", i, file);;
 		}
 		bindlen = delimstrlen(UserInput + i, ' ');
-		allocmemwy(&memowy, UserInput + i, bindlen);
+		/* setting the binding */
+		binds->pos = allocstrmemwy(binds, UserInput + i, bindlen);
+		/* setting the base as that binding's resolution */
+		binds->pos = allocmemwy(binds, memowy.mem + 2, lenwy(memowy.mem));
+		printinttostr(data(binds) + lengf(binds) - 5,
+					  bindcn*typeBylen(enumtype));
+		/* get ready for next binding */
 		i += bindlen;
 		SkipSpaces(UserInput, userInputLen, &i);
-		bindam++;
-	} while(UserInput[i] != '=');
-	/* checking the specific type of the enum */
-	int enumtype = globalType;
-	if(UserInput[bbase + bbaselen] == ','){
-		i = bbase + bbaselen;
-		i++; SkipSpaces(UserInput, userInputLen, &i);
-		enumtype = keywordlook(UserInput, 4, typeString, &i);
-		if(enumtype == -1){
-			error("\aInvalid type", i, file);
-			free(memowy.mem);
-			return NULL;
-		}
-	}
-	/* making the bindings themselves */
-	indexmemwy(&memowy, 2);
-	pos_t remem;
-	short bindcn = 0;
-	do {
-		remem = memowy.pos;
-		memowy.pos = allocmemwy(&memowy, data(&memowy), lenwy(lenp(&memowy)));
-		/* appending the ` = (expr)` */
-		appmemwy(&memowy, " = ", 3);
-		appmemwy(&memowy, memowy.mem + 2, lenwy(memowy.mem));
-		appmemwy(&memowy, "   ", 3);
-		printinttostr(data(&memowy) + lenwy(lenp(&memowy)) - 3, bindcn*typeBylen(enumtype));
-		appmemwy(&memowy, whichref, 2);
-		/* passing it to letbind */
-		memcpy(UserInput, data(&memowy), lenwy(lenp(&memowy)));
-		letbind(file, 0, binds);
-		/* recycle */
-//		printmemwy(&memowy);
-		freememwy(&memowy);
-		memowy.pos = remem;
-		indexmemwy(&memowy, 1);
 		bindcn++;
-	} while(bindcn < bindam);
+	} while(UserInput[i] != '=');
 
 	free(memowy.mem);
 	return binds;
 }
 
-bind_t* letbind(file_t* file, int i, bind_t* binds){
-	SkipSpaces(UserInput, userInputLen, &i);
-	if(UserInput[i] < 'A' || UserInput[i] > 'Z'){
-		error("\aBindings must start with a capital letter.\n", i, file);
-		return NULL;
-	}
-	int begin = i;
-	while(IsAlph(UserInput + i) || IsNr(UserInput + i) || UserInput[i] == '_')
-		i++;
-	binds->bindam++;
-	binds->binds = realloc(binds->binds, sizeof(char*[binds->bindam + 1]));
-	binds->binds[binds->bindam-1] = realloc(binds->binds[binds->bindam-1], i - begin + 1);
-	binds->binds[binds->bindam] = malloc(1);
-
-	memcpy(binds->binds[binds->bindam-1], UserInput + begin, i - begin);
-	binds->binds[binds->bindam-1][i - begin] = '\0';
-	binds->binds[binds->bindam][0] = '\0';
-
-	binds->resos = realloc(binds->resos, sizeof(char*[binds->bindam + 1])); // allocating this one before any errors can take place
-	free(binds->resos[binds->bindam-1]);
-	binds->resos[binds->bindam-1] = NULL;
-	binds->resos[binds->bindam] = malloc(1);
-	binds->resos[binds->bindam][0] = '\0';
-
-	while(UserInput[i] != '=' && !EndLine(UserInput + i)) i++;
-	if(UserInput[i] != '='){
-		error("\aTo assign a binding, use '='", i, file);
-		return NULL;
-	}
-	i++;
-	SkipSpaces(UserInput, userInputLen, &i);
-	if(EndLine(UserInput + i)){
-		error("\aNo binding", i, file);
-		return NULL;
-	}
-	begin = i;
-	while(!EndLine(UserInput + i)) i++;
-	binds->resos[binds->bindam-1] = malloc(i - begin + 1);
-	memcpy(binds->resos[binds->bindam-1], UserInput + begin, i - begin);
-	binds->resos[binds->bindam-1][i - begin] = '\0';
-
-	i = begin;
-	if(UserInput[i] >= 'A' && UserInput[i] <= 'Z')
-		if(labellook(UserInput + i, binds->binds) == -1){
-			error("\aUndefined binding", i, file);
-			return NULL;
-	}
-	return binds;
-}
-
-bind_t* insertbind(file_t* file, int* readhead, bind_t* binds){
+memowy_t* insertbind(file_t* file, int* readhead, memowy_t* binds){
 	int i = *readhead;
-	int bi = labellook(UserInput + i, binds->binds);
-	if(bi == -1){
-		error("\aUndefined binding", i, file);
-		return NULL;
-	}
-	int blen = strlen(binds->binds[bi]);
-	int rlen = strlen(binds->resos[bi]);
+	int l = i;
+	while(IsAlph(UserInput + l) || IsNr(UserInput + l) || UserInput[l] == '_')
+		l++;
+	l -= i;
+
+	indexmemwy(binds, -1);
+	pos_t bi = sfindmemwy(binds, allocstrmemwy(binds, UserInput + i, l), -2);
+	freememwy(binds);
+	if(bi == binds->avai)
+		return error("\aUndefined binding", i, file);
+	pos_t ol = binds->pos;
+	binds->pos = bi;
+
+//	indexmemwy(binds, -1);
+	int blen = lengf(binds) - 1;
+	indexmemwy(binds,  1);
+	int rlen = lengf(binds) - 1;
 	userInputLen = STANDARDuserInputLen + rlen - blen;
 	if(userInputLen > STANDARDuserInputLen)
 		UserInput = realloc(UserInput, userInputLen);
-/*	printf("start %p, end %p, src %p, des %p, wlen %d, endes %p, endsrc %p\nnewlen %d, srcoffset %d, desoffset %d\n",
-			UserInput, UserInput + userInputLen, UserInput + *readhead + rlen, UserInput + *readhead + blen,
-			STANDARDuserInputLen - *readhead - blen - 1, UserInput + *readhead + rlen + STANDARDuserInputLen - *readhead - blen - 1,
-			UserInput + *readhead + blen + STANDARDuserInputLen - *readhead - blen - 1,
-			userInputLen, *readhead + rlen, *readhead + blen);
-*/	memmove(UserInput + *readhead + rlen,
+
+	memmove(UserInput + *readhead + rlen,
 			UserInput + *readhead + blen,
 			STANDARDuserInputLen - *readhead - blen - 1);
-	memcpy(UserInput + *readhead, binds->resos[bi], rlen);
+	memcpy(UserInput + *readhead, data(binds), rlen);
 	(*readhead)--;
-	return binds;
-}
 
-void freebinds(bind_t* binds){
-	for(unsigned int i = 0; i < binds->bindam + 1; i++){
-		free(binds->binds[i]);
-		free(binds->resos[i]);
-	}
-	free(binds->binds);
-	free(binds->resos);
+	binds->pos = ol;
+	indexmemwy(binds,  1);
+	return binds;
 }
 
 //##################################################################################### labels
@@ -347,8 +302,7 @@ lbl_t* savelabel(file_t* file, char* input, int* readhead, lbl_t* labels, file_t
 		i++;
 	if(i - *readhead == 0){
 		labels->definedlabels[labels->labelam-1] = malloc(1);
-		error("\aLabel can not be 0 characters long, allowed characters are: a-z, A-Z, 0-9, _ and -.\n", i, src);
-		return NULL;
+		return error("\aLabel can not be 0 characters long, allowed characters are: a-z, A-Z, 0-9, _ and -.\n", i, src);
 	}
 //	printf("copy it\n");
 	labels->definedlabels[labels->labelam-1] = malloc(i - *readhead + 2);
@@ -373,8 +327,7 @@ lbl_t* savejmp(file_t* file, char* input, int* readhead, lbl_t* labels, file_t* 
 		i++;
 	if(i - *readhead == 0){
 		labels->requiredlabels[labels->jumpam-1] = malloc(1);
-		error("\aLabel can not be 0 characters long, allowed characters are: a-zA-Z0-9_-\n", i, src);
-		return NULL;
+		return error("\aLabel can not be 0 characters long, allowed characters are: a-zA-Z0-9_-\n", i, src);
 	}
 //	printf("copy it\n");
 	labels->requiredlabels[labels->jumpam-1] = malloc(i - *readhead + 2);
@@ -441,8 +394,9 @@ char* arrapp(char* des, uint64_t deslen, char* src, uint64_t srclen){
 
 //##################################################################################### building, compiling
 
-char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
+char* buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins){
 //	printf("buildargs\n");
+//	bool macrowas = false; // this is for debugCompile
 	char* section = malloc(2);
 	u16 section = 2;
 	nry_t dnry; makenry(&dnry, 8);
@@ -668,9 +622,8 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 				prev = opNrs;
 				break;
 			case 'A'...'Z':
-				if(debugCompile) printf("Macro, '%s', expanded to", UserInput);
 				if(insertbind(sourcefile, readhead, bindings) == NULL) goto endonerror;
-				if(debugCompile) printf(": '%s'\n", UserInput);
+//				macrowas = true;
 				break;
 			case 'b':
 				dummy = opBrk;
@@ -696,6 +649,10 @@ char* buildargs(int* readhead, file_t* sourcefile, bind_t* bindings, char ins){
 	end:
 	if(!checkkinds((signed char)ins, argkinds, sourcefile))
 		goto endonerror;
+	if(debugCompile){
+		printf("compiled: '%s'\n", UserInput);
+	}
+
 	freenry(&dnry);
 	if(userInputLen != STANDARDuserInputLen){ UserInput = realloc(UserInput, STANDARDuserInputLen); userInputLen = STANDARDuserInputLen;};
 	return section;
@@ -714,8 +671,7 @@ bool compile(file_t* sourcefile, file_t* runfile, char* sourcename){
 	globalType = STANDARDtype;
 
 	lbl_t labeling = {0, NULL, NULL, 0, NULL, NULL};
-	bind_t bindings = {0, malloc(sizeof(char*)), malloc(sizeof(char*))};
-	bindings.binds[0] = NULL; bindings.resos[0] = NULL;
+	memowy_t bindings = {0, 0, 0, NULL};
 	memowy_t includes = {0, 0, 0, NULL};
 	allocmemwy(&includes, sourcename, strlen(sourcename) + 1);
 
@@ -811,15 +767,15 @@ bool compile(file_t* sourcefile, file_t* runfile, char* sourcename){
 	if(solvelabels(runfile, &labeling) == -1) goto endonerror;
 
 	free(UserInput);
-	freebinds(&bindings);
 	freelabels(&labeling);
-	free(includes.mem);
+	clearmemwy(&bindings);
+	clearmemwy(&includes);
 	return true;
 	endonerror:
 	free(UserInput);
-	freebinds(&bindings);
 	freelabels(&labeling);
-	free(includes.mem);
+	clearmemwy(&bindings);
+	clearmemwy(&includes);
 	return false;
 }
 
