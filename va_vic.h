@@ -16,7 +16,7 @@ char instructionString[][maxKeywordLen] = {
 	"fread", "fwrite", "flen", "time", // 8
 	"ex", // 9
 	"Ce", "Cs", "Cg", "Cse", "Cge", "Cn", "jmp", "call", "ret", // 10
-	"def", "enum", "import",// 12
+	"def", "enum", "opens", "clons", "import",// 12
 	"\0end"
 };
 
@@ -31,7 +31,7 @@ enum instructionEnum {
 	firead, fiwrite, flen, timei, // 8
 	ex, // 9
 	Ce, Cs, Cg, Cse, Cge, Cn, jmp, call, ret, // 10
-	def, enumb, include,// 11
+	def, enumb, opens, clons, include,// 11
 	final
 };
 

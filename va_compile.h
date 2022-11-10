@@ -278,6 +278,27 @@ memowy_t* insertbind(file_t* file, int* readhead, memowy_t* binds){
 	return binds;
 }
 
+memowy_t* opennamespace(memowy_t* binds){
+	dummy = 0x0101;
+	allocmemwy(binds, &dummy, 2);
+	binds->pos = allocmemwy(binds, &dummy, 2);
+	return binds;
+}
+
+memowy_t* closenamespace(memowy_t* binds){
+	dummy = 0x0101;
+	pos_t prevspace = sfindmemwy(binds, allocmemwy(binds, &dummy, 2), -2);
+	freememwy(binds);
+	if(prevspace == binds->avai)
+		prevspace = 0;
+
+	while(binds->pos != prevspace){
+		indexmemwy(binds, -1);
+		freememwy(binds);
+	}
+	return binds;
+}
+
 //##################################################################################### labels
 
 typedef struct {
@@ -735,6 +756,8 @@ bool compile(file_t* sourcefile, file_t* runfile, char* sourcename){
 			switch(ins){
 				case def: if(letbind(sourcefile, readhead, &bindings) == NULL) goto endonerror; break;
 				case enumb:if(enumbind(sourcefile, readhead, &bindings) == NULL) goto endonerror; break;
+				case opens: if(opennamespace(&bindings) == NULL) goto endonerror; break;
+				case clons: if(closenamespace(&bindings) == NULL) goto endonerror; break;
 				case include: if(includef(sourcefile, readhead, &includes) == NULL) goto endonerror; break;
 			} goto compwhile;//loop
 		}
