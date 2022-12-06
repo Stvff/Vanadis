@@ -3,7 +3,7 @@ u64
 def Fibseq = 0$
 def Iterations = 2$[0]
 def Newsize = 1$!
-mov Fibseq, % 0 + 1;
+mov Fibseq, 0 + 1;
 chr print "How many iterations?\n> ", 1
 u64 input Iterations~, 0^, 0;
 :loop, u64

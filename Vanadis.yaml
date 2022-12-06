@@ -56,4 +56,4 @@ rules:
         start: "(#)"
         end: "($|;)"
         rules:
-            - todo: "(TODO|XXX|FIXME|cdx|sta|--|[)]|[(]):?"
+            - todo: "\\b(TODO|XXX|FIXME|cdx:|sta:|--|[)]|[(])\\b"

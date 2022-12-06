@@ -6,6 +6,7 @@ jmp 3DF32VEC_END
 def X = 0 # 0
 def Y = 4 # 1t
 def Z = 8 # 2t
+opens
 
 # sta:( 4x4matr 3Df32vec -- 4x4matr transformed3Df32vec )
 :transf32orm, f32
@@ -128,6 +129,7 @@ ret
 	ex -1$<-9t>* # return to beginning of triangle
 ret
 
+clons
 import math.vas
 
 :3DF32VEC_END

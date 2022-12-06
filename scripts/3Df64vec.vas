@@ -6,6 +6,7 @@ jmp 3DF64VEC_END
 def X = 0 # 0
 def Y = 8 # 1t
 def Z = 12 # 2t
+opens
 
 # sta:( 4x4f64matr 3Df64vec -- 4x4f64matr transformed3Df64vec )
 :transf64orm, f64
@@ -155,6 +156,7 @@ ret
 	ex -4$<-9t>*
 ret
 
+clons
 import math.vas
 
 :3DF64VEC_END

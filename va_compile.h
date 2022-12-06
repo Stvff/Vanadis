@@ -601,46 +601,39 @@ char* buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 				kinds[1] = kinds[0]; kinds[0] = 'p';
 				prev = opNry;
 				break;
-			case '%':
-//				printf("kind is nry %x\n", opNry);
-				(*readhead)++;
-				SkipSpaces(UserInput, userInputLen, readhead);
-				if(!(IsNr(UserInput + *readhead) || UserInput[*readhead] == '\'' || UserInput[*readhead] == '+')){
-					error("\aInvalid page declaration. Allowed characters are 0-9, -, \', +, spaces and tabs", *readhead, sourcefile);
-					goto endonerror;
-				}
-				dummy = opNry;
-				section = arrapp(section, u16 section, (char*) &dummy, 1);
-				(u16 section)++;
-				inptonry(&dnry, UserInput, readhead, globalType);
-				/*length*/
-				section = arrapp(section, u16 section, (char*) &dnry.len, 2);
-				u16 section += 2;
-				/*offset*/
-				dummy = dnry.fst - dnry.base;
-				section = arrapp(section, u16 section, (char*) &dummy, 2);
-				u16 section += 2;
-				/*data*/
-//				aprintnry(&dnry, globalType, true);
-				section = arrapp(section, u16 section, (char*)dnry.base, dnry.len);
-				u16 section += (uint16_t) dnry.len;
-				(*readhead)--;
-				kinds[1] = kinds[0]; kinds[0] = 'p';
-				prev = opNry;
-				break;
 			case '0'...'9': case '-': case '\'': case '+':
-//				printf("kind is nrs %x\n", opNrs);
-				dummy = opNrs;
-				section = arrapp(section, u16 section, (char*) &dummy, 1);
-				(u16 section)++;
 				inptonry(&dnry, UserInput, readhead, globalType);
-				/*data*/
-//				aprintnry(&dnry, globalType, true);
-				section = arrapp(section, u16 section, (char*)dnry.fst, typeBylen(globalType));
-				u16 section += (uint16_t) typeBylen(globalType);
-				(*readhead)--;
-				kinds[1] = kinds[0]; kinds[0] = 'd';
-				prev = opNrs;
+				if(dnry.len / typeBylen(globalType) == 1){
+//					printf("kind is nrs %x\n", opNrs);
+					dummy = opNrs;
+					section = arrapp(section, u16 section, (char*) &dummy, 1);
+					(u16 section)++;
+					/*data*/
+					section = arrapp(section, u16 section, (char*)dnry.fst, typeBylen(globalType));
+					u16 section += (uint16_t) typeBylen(globalType);
+					(*readhead)--;
+					kinds[1] = kinds[0]; kinds[0] = 'd';
+					prev = opNrs;
+				} else {
+//					printf("kind is nry %x\n", opNry);
+					dummy = opNry;
+					section = arrapp(section, u16 section, (char*) &dummy, 1);
+					(u16 section)++;
+					/*length*/
+					section = arrapp(section, u16 section, (char*) &dnry.len, 2);
+					u16 section += 2;
+					/*offset*/
+					dummy = dnry.fst - dnry.base;
+					section = arrapp(section, u16 section, (char*) &dummy, 2);
+					u16 section += 2;
+					/*data*/
+//					aprintnry(&dnry, globalType, true);
+					section = arrapp(section, u16 section, (char*)dnry.base, dnry.len);
+					u16 section += (uint16_t) dnry.len;
+					(*readhead)--;
+					kinds[1] = kinds[0]; kinds[0] = 'p';
+					prev = opNry;
+				}
 				break;
 			case 'A'...'Z':
 				if(insertbind(sourcefile, readhead, bindings) == NULL) goto endonerror;
@@ -775,7 +768,7 @@ bool compile(file_t* sourcefile, file_t* runfile, char* sourcename){
 			mfapp(runfile, (char*) &dummy, 8);
 			goto compwhile;
 		} else if(ins >= Ce && ins <= Cn){
-			goto figins;
+			readhead++; goto figins;
 		} else if(ins == ret)
 			goto compwhile;
 /*args*/
