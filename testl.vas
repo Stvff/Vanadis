@@ -1,0 +1,4 @@
+f64 push 25^
+dprint 0$!, 0
+lib "sqrt", 0$!
+dprint 0$!, 0

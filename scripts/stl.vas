@@ -1,4 +1,5 @@
 call fload
+	Cn jmp END
 def File = 0$
 def Normal = 0 # 4 8
 def V1 = 12 # 16 20
@@ -17,8 +18,8 @@ print 1$, 0
 free 1
 
 chr print "Vertices:", 0
-call getvertices
-f32
+call getf64vertices
+f64
 print 1$, 0
 print 2$, 0
 print 3$, 0
@@ -26,11 +27,12 @@ chr print "Attribute:", 0
 u16 dprint File<Attr>, 0
 
 chr print "Calculated Normal:", 0
-call trianormal
-f32 print 0@, 0
+call f64trianormal
+f64 print 0@, 0
 
 jmp END
 
 import stdlib.vas
+import 3Df64vec.vas
 
 :END

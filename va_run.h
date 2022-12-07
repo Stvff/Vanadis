@@ -906,12 +906,13 @@ bool run(file_t* runfile){
 				break;
 		}
 		if(debugIns){
-			printf("pos x%lx\n", runfile->pos);
+			printf("pos 0x%lx\n", runfile->pos);
 			printf("stackPtr: %ld, stackFrameOffset: %ld\n", stackPtr, stackFrameOffset);
 			if(debugEnters) retbool = breakpoint(NULL, NULL);
 //			printstate();
 		}
 	}
+	if(!retbool) printf("The code pointer was 0x%lx\n", runfile->pos);
 	freenry(&callnr);
 	return retbool;
 }

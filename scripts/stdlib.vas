@@ -3,14 +3,24 @@ jmp STDLIB_END
 
 :fload, u8 # mst:( filename ' -- file )
 	alloc 2
+	i64 staptr 0$!
+	cmp 0$!, 2
+		chr Cs print "fload: Not enough data (no filename was given)", 0
+		i64 Cs dprint 0$!, 0
+		Cs jmp floadhadanerror
 	u64 flen 0$!, -1$, 1$!
 	i8 cmp 1$!, -1 # check if file exists
-		Ce free 2
 		chr Ce print "This file can not be opened: ", 1
 		Ce print -1$, 0
-		Ce ret
+		Ce jmp floadhadanerror
 	u64 fread 0$, -1$, 0, 1$!
 	u8 free 1; flip 1; free 1; unf 1 # mst:( filename 'file errorcheck -- 'file )
+	cmp 0, 0
+ret
+
+:floadhadanerror, u8
+	free 2
+	cmp 0, 1
 ret
 
 :STDLIB_END

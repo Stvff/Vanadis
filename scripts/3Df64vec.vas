@@ -5,7 +5,7 @@ jmp 3DF64VEC_END
 
 def X = 0 # 0
 def Y = 8 # 1t
-def Z = 12 # 2t
+def Z = 16 # 2t
 opens
 
 # sta:( 4x4f64matr 3Df64vec -- 4x4f64matr transformed3Df64vec )
@@ -64,30 +64,36 @@ ret
 ret
 
 # sta:( 3Df64vec1 3Df64vec2 -- 3Df64vec2 )
-:cross3Df64vec, f64
+:cross3Df64vec, f64; opens
 	# [ X1 ]   [ X2 ]   [ Y1*Z2 - Z1*Y2 ]
 	# [ Y1 ] x [ Y2 ] = [ Z1*X2 - X1*Z2 ]
 	# [ Z1 ]   [ Z2 ]   [ X1*Y2 - Y1*X2 ]
 	alloc 1
-	def CrossV1 = -2$
-	def CrossV2 = -1$
-	def CrossRes = 0$
-	rsz CrossRes, 4t
-	mul CrossRes<X>, CrossV1<Y>, CrossV2<Z>
-	mul CrossRes<3t>, CrossV1<Z>, CrossV2<Y>
-	sub CrossRes<X>, CrossRes<X>, CrossRes<3t>
+	def V1 = -2$
+	def V2 = -1$
+	def Res = 0$
+	def D = 24
+	rsz Res, 4t
 
-	mul CrossRes<Y>, CrossV1<Z>, CrossV2<X>
-	mul CrossRes<3t>, CrossV1<X>, CrossV2<Z>
-	sub CrossRes<Y>, CrossRes<Y>, CrossRes<3t>
+	mul Res<X>, V1<Y> , V2<Z>
+	mul Res<D>, V1<Z> , V2<Y> 
+	#-------------------------
+	sub Res<X>, Res<X>, Res<D>
 
-	mul CrossRes<Z>, CrossV1<X>, CrossV2<Y>
-	mul CrossRes<3t>, CrossV1<Y>, CrossV2<Z>
-	sub CrossRes<Z>, CrossRes<Z>, CrossRes<3t>
-	rsz CrossRes, 3t
-	pop CrossV1
+	mul Res<Y>, V1<Z> , V2<X>
+	mul Res<D>, V1<X> , V2<Z>
+	#-------------------------
+	sub Res<Y>, Res<Y>, Res<D>
+
+	mul Res<Z>, V1<X> , V2<Y>
+	mul Res<D>, V1<Y> , V2<Z>
+	#-------------------------
+	sub Res<Z>, Res<Z>, Res<D>
+
+	rsz Res, 3t
+	pop V1
 	free 1
-ret
+ret; clons
 
 # sta:( 3Df64vec nr -- 3Df64vec/nr )
 :sdiv3Df64vec, f64
@@ -130,8 +136,8 @@ ret
 	cast 1$<16>, -1$<8>, 10
 	ex -1$<3t>*
 	cast 2$!, -1$!, 10
-	cast 3$<8>, -1$<4>, 10
-	cast 4$<16>, -1$<8>, 10
+	cast 2$<8>, -1$<4>, 10
+	cast 2$<16>, -1$<8>, 10
 	ex -1$<-9t>* # return to beginning of triangle
 ret
 
