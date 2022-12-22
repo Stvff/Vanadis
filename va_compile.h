@@ -377,7 +377,7 @@ int solvelabels(file_t* file, lbl_t* labels){
 			return -1;
 		}
 //		printf("hewewowo %d, 0x%lx\n", i, labels->labelpos_s[labelnr]);
-		u64 (file->mfp + labels->jumppos_s[i]) = labels->labelpos_s[labelnr];
+		memcpy(file->mfp + labels->jumppos_s[i], labels->labelpos_s+ labelnr, sizeof(uint64_t));
 	}
 
 	free(labels->definedlabels[labels->labelam]);
@@ -407,7 +407,7 @@ void freelabels(lbl_t* labels){
 //	printf("no error with that\n");
 }
 
-char* arrapp(char* des, uint64_t deslen, char* src, uint64_t srclen){
+char* arrapp(char* des, uint64_t deslen, void* src, uint64_t srclen){
 	des = realloc(des, deslen + srclen);
 	memcpy(des + deslen, src, srclen);
 	return des;
@@ -415,11 +415,11 @@ char* arrapp(char* des, uint64_t deslen, char* src, uint64_t srclen){
 
 //##################################################################################### building, compiling
 
-char* buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins){
+ptr_t buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins){
 //	printf("buildargs\n");
 //	bool macrowas = false; // this is for debugCompile
-	char* section = malloc(2);
-	u16 section = 2;
+	ptr_t section = {malloc(2)};
+	*section.u16 = 2;
 	nry_t dnry; makenry(&dnry, 8);
 	unsigned char commaam = 0;
 	unsigned char prev = opNoop;
@@ -432,8 +432,8 @@ char* buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 			case '$':
 //				printf("op is $ %x\n", opStackref);
 				dummy = opStackref;
-				section = arrapp(section, u16 section, (char*) &dummy, 1);
-				(u16 section)++;
+				section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
+				(*section.u16)++;
 				if(kinds[0]!='d' && kinds[0]!='D'){
 					error("\aOperator '$' expects a datum, not a page or nothing.\n", *readhead, sourcefile);
 					goto endonerror;
@@ -444,8 +444,8 @@ char* buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 			case '@':
 //				printf("op is @ %x\n", opStackref);
 				dummy = opStackrevref;
-				section = arrapp(section, u16 section, (char*) &dummy, 1);
-				(u16 section)++;
+				section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
+				(*section.u16)++;
 				if(kinds[0]!='d' && kinds[0]!='D'){
 					error("\aOperator '@' expects a datum, not a page or nothing.\n", *readhead, sourcefile);
 					goto endonerror;
@@ -456,14 +456,14 @@ char* buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 			case '!':
 //				printf("op is ! %x\n", opImm);
 				if(prev == opStackref || prev == opStackrevref){
-					u8 (section - 1 + u16 section) += 2;
+					*(section.u8 - 1 + *section.u16) += 2;
 					kinds[0] = 'D';
 					prev += 2;
 					break;
 				}
 				dummy = opImm;
-				section = arrapp(section, u16 section, (char*) &dummy, 1);
-				(u16 section)++;
+				section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
+				(*section.u16)++;
 				if(kinds[0]!='p' && kinds[0]!='P'){
 					error("\aOperator '!' expects a page, not a datum or nothing.\n", *readhead, sourcefile);
 					goto endonerror;
@@ -474,8 +474,8 @@ char* buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 			case '^':
 //				printf("op is ^ %x\n", opMakenry);
 				dummy = opMakenry;
-				section = arrapp(section, u16 section, (char*) &dummy, 1);
-				(u16 section)++;
+				section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
+				(*section.u16)++;
 				if(kinds[0]!='d' && kinds[0]!='D'){
 					error("\aOperator '^' expects a datum, not a page or nothing.\n", *readhead, sourcefile);
 					goto endonerror;
@@ -486,8 +486,8 @@ char* buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 			case ']':
 //				printf("op is ] %x\n", opEntry);
 				dummy = opEntry;
-				section = arrapp(section, u16 section, (char*) &dummy, 1);
-				(u16 section)++;
+				section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
+				(*section.u16)++;
 				if(!(kinds[0]=='d' || kinds[1]=='p' || kinds[0]=='D' || kinds[1]=='P')){
 					error("\aOperator ']' expects a page and a datum (in that order).\n", *readhead, sourcefile);
 					goto endonerror;
@@ -498,8 +498,8 @@ char* buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 			case '>':
 //				printf("op is > %x\n", opRef);
 				dummy = opRef;
-				section = arrapp(section, u16 section, (char*) &dummy, 1);
-				(u16 section)++;
+				section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
+				(*section.u16)++;
 				if(!(kinds[0]=='d' || kinds[1]=='p' || kinds[0]=='D' || kinds[1]=='P')){
 					error("\aOperator '>' expects a page and a datum (in that order).\n", *readhead, sourcefile);
 					goto endonerror;
@@ -514,14 +514,14 @@ char* buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 						error("\aThis operator expects its first argument to be a mutable page.\n", *readhead, sourcefile);
 						goto endonerror;
 					}
-					u8 (section - 1 + u16 section) += 2;
+					*(section.u8 - 1 + *section.u16) += 2;
 					prev += 2;
 				} break;
 			case 'l':
 //				printf("op is l %x\n", opLength);
 				dummy = opLength;
-				section = arrapp(section, u16 section, (char*) &dummy, 1);
-				(u16 section)++;
+				section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
+				(*section.chr)++;
 				if(kinds[0]!='p' && kinds[0]!='P'){
 					error("\aOperator 'l' expects a page, not a datum or nothing.\n", *readhead, sourcefile);
 					goto endonerror;
@@ -532,8 +532,8 @@ char* buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 			case 'o':
 //				printf("op is o %x\n", opLength);
 				dummy = opOffset;
-				section = arrapp(section, u16 section, (char*) &dummy, 1);
-				(u16 section)++;
+				section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
+				(*section.u16)++;
 				if(kinds[0]!='p' && kinds[0]!='P'){
 					error("\aOperator 'o' expects a page, not a datum or nothing.\n", *readhead, sourcefile);
 					goto endonerror;
@@ -544,8 +544,8 @@ char* buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 			case 't':
 //				printf("op is t %x\n", opSizeof);
 				dummy = opSizeof;
-				section = arrapp(section, u16 section, (char*) &dummy, 1);
-				(u16 section)++;
+				section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
+				(*section.u16)++;
 				if(kinds[0]!='d' && kinds[0]!='D'){
 					error("\aOperator 't' expects a datum, not a page or nothing.\n", *readhead, sourcefile);
 					goto endonerror;
@@ -556,8 +556,8 @@ char* buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 			case '~':
 //				printf("op is ~ %x\n", opLength);
 				dummy = opSwap;
-				section = arrapp(section, u16 section, (char*) &dummy, 1);
-				(u16 section)++;
+				section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
+				(*section.u16)++;
 				if(kinds[0] == '_' || kinds[1] == '_'){
 					error("\aNot enough elements to swap.\n", *readhead, sourcefile);
 					goto endonerror;
@@ -574,29 +574,29 @@ char* buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 				argkinds[commaam] = kinds[0];
 				commaam++;
 				dummy = opComma;
-				section = arrapp(section, u16 section, (char*) &dummy, 1);
-				(u16 section)++;
+				section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
+				(*section.u16)++;
 				kinds[0] = '_'; kinds[1] = '_';
 				prev = opComma;
 				break;
 			case '"':
 //				printf("kind is \" %x\n", opNry);
 				dummy = opNry;
-				section = arrapp(section, u16 section, (char*) &dummy, 1);
-				(u16 section)++;
+				section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
+				(*section.u16)++;
 				(*readhead)++;
 				strtonry(&dnry, UserInput, readhead);
 //				aprintnry(&dnry, Chr, true);
 				/*length*/
-				section = arrapp(section, u16 section, (char*) &dnry.len, 2);
-				u16 section += 2;
+				section.chr = arrapp(section.chr, *section.u16, &dnry.len, 2);
+				*section.u16 += 2;
 				/*offset*/
-				dummy = dnry.fst - dnry.base;
-				section = arrapp(section, u16 section, (char*) &dummy, 2);
-				u16 section += 2;
+				dummy = dnry.fst.u8 - dnry.base.u8;
+				section.chr = arrapp(section.chr, *section.u16, &dummy, 2);
+				*section.u16 += 2;
 				/*data*/
-				section = arrapp(section, u16 section, (char*)dnry.base, dnry.len);
-				u16 section += (uint16_t) dnry.len;
+				section.chr = arrapp(section.chr, *section.u16, dnry.base.chr, dnry.len);
+				*section.u16 += (uint16_t) dnry.len;
 				(*readhead)--;
 				kinds[1] = kinds[0]; kinds[0] = 'p';
 				prev = opNry;
@@ -606,30 +606,30 @@ char* buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 				if(dnry.len / typeBylen(globalType) == 1){
 //					printf("kind is nrs %x\n", opNrs);
 					dummy = opNrs;
-					section = arrapp(section, u16 section, (char*) &dummy, 1);
-					(u16 section)++;
+					section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
+					(*section.u16)++;
 					/*data*/
-					section = arrapp(section, u16 section, (char*)dnry.fst, typeBylen(globalType));
-					u16 section += (uint16_t) typeBylen(globalType);
+					section.chr = arrapp(section.chr, *section.u16, dnry.fst.chr, typeBylen(globalType));
+					*section.u16 += (uint16_t) typeBylen(globalType);
 					(*readhead)--;
 					kinds[1] = kinds[0]; kinds[0] = 'd';
 					prev = opNrs;
 				} else {
 //					printf("kind is nry %x\n", opNry);
 					dummy = opNry;
-					section = arrapp(section, u16 section, (char*) &dummy, 1);
-					(u16 section)++;
+					section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
+					(*section.u16)++;
 					/*length*/
-					section = arrapp(section, u16 section, (char*) &dnry.len, 2);
-					u16 section += 2;
+					section.chr = arrapp(section.chr, *section.u16, &dnry.len, 2);
+					*section.u16 += 2;
 					/*offset*/
-					dummy = dnry.fst - dnry.base;
-					section = arrapp(section, u16 section, (char*) &dummy, 2);
-					u16 section += 2;
+					dummy = dnry.fst.u8 - dnry.base.u8;
+					section.chr = arrapp(section.chr, *section.u16, &dummy, 2);
+					*section.u16 += 2;
 					/*data*/
 //					aprintnry(&dnry, globalType, true);
-					section = arrapp(section, u16 section, (char*)dnry.base, dnry.len);
-					u16 section += (uint16_t) dnry.len;
+					section.chr = arrapp(section.chr, *section.u16, dnry.base.chr, dnry.len);
+					*section.u16 += (uint16_t) dnry.len;
 					(*readhead)--;
 					kinds[1] = kinds[0]; kinds[0] = 'p';
 					prev = opNry;
@@ -641,8 +641,8 @@ char* buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 				break;
 			case 'b':
 				dummy = opBrk;
-				section = arrapp(section, u16 section, (char*) &dummy, 1);
-				(u16 section)++;
+				section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
+				(*section.u16)++;
 				break;
 			default:;
 				char tmpcfd = UserInput[*readhead];
@@ -672,16 +672,16 @@ char* buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 	return section;
 
 	endonerror:
-	free(section);
+	free(section.u8);
 	freenry(&dnry);
-	return NULL;
+	return (ptr_t) NULL;
 }
 
 bool compile(file_t* sourcefile, file_t* runfile, char* sourcename){
 	UserInput = malloc(userInputLen);
 	int readhead, ins, previns = 0;
 	char inssection = 0;
-	char* argsection = NULL;
+	ptr_t argsection = {NULL};
 	globalType = STANDARDtype;
 
 	lbl_t labeling = {0, NULL, NULL, 0, NULL, NULL};
@@ -773,9 +773,9 @@ bool compile(file_t* sourcefile, file_t* runfile, char* sourcename){
 			goto compwhile;
 /*args*/
 		argsection = buildargs(&readhead, sourcefile, &bindings, inssection/2);
-		if(argsection == NULL) goto endonerror;//end
-		mfapp(runfile, argsection, u16 argsection);
-		free(argsection); argsection = NULL;
+		if(argsection.chr == NULL) goto endonerror;//end
+		mfapp(runfile, argsection.p, *argsection.u16);
+		free(argsection.p); argsection.p = NULL;
 //		printf("Endofloop\n");
 	goto compwhile;//loop
 
