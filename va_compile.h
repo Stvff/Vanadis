@@ -743,7 +743,7 @@ bool compile(file_t* sourcefile, file_t* runfile, char* sourcename){
 				goto endonerror;//end
 		}
 		readhead++;
-		if(inssection%2 == 0 && ins >= def && ins <= include){
+		if(inssection%2 == 0 && ins >= def && ins <= insert){
 //			printf("macro: %s\n", UserInput);
 /*macro's*/
 			switch(ins){
@@ -751,7 +751,7 @@ bool compile(file_t* sourcefile, file_t* runfile, char* sourcename){
 				case enumb:if(enumbind(sourcefile, readhead, &bindings) == NULL) goto endonerror; break;
 				case opens: if(opennamespace(&bindings) == NULL) goto endonerror; break;
 				case clons: if(closenamespace(&bindings) == NULL) goto endonerror; break;
-				case include: if(includef(sourcefile, readhead, &includes) == NULL) goto endonerror; break;
+				case insert: if(includef(sourcefile, readhead, &includes) == NULL) goto endonerror; break;
 			} goto compwhile;//loop
 		}
 /*writing ins*/

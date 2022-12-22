@@ -1,2 +1,2 @@
-import tests/testdefs.vas
+insert tests/testdefs.vas
 chr print "God's in his heaven-- / All's right with the world.", 0

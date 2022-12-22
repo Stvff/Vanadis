@@ -32,7 +32,7 @@ f64 print 0@, 0
 
 jmp END
 
-import stdlib.vas
-import 3Df64vec.vas
+insert stdlib.vas
+insert 3Df64vec.vas
 
 :END

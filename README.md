@@ -1,3 +1,7 @@
+# Vanadis (better name tbd)
+
+
+
 # Overview of all instructions
 And their argument kinds
 
@@ -8,9 +12,9 @@ And their argument kinds
 |`free`     |`(datum)`     |free|
 |`push`     |`(datum)`     |push|
 |`pop`      |`(mutable page)`|pop|
-|`flip`     |`(datum)`   |flip|
-|`unf`      |`(datum)`   |unflip|
-|`staptr`   |`(datum)`   |get stack pointer|
+|`flip`     |`(datum)`     |flip|
+|`unf`      |`(datum)`     |unflip|
+|`staptr`   |`(datum)`     |get stack pointer|
 |`cdxptr`   |`(mutable Datum)`|get codex pointer|
 
 
@@ -31,9 +35,9 @@ And their argument kinds
 |`dec`      |`(mutable datum)`|decrement|
 |`add`      |`(mutable datum), (datum), (datum)`|add|
 |`sub`      |`(mutable datum), (datum), (datum)`|subtract|
-|`mul`      |`(mutable datum), (datum), (datum)`|mul|
-|`div`      |`(mutable datum), (datum), (datum)`|div|
-|`mod`      |`(mutable datum), (datum), (datum)`|mod|
+|`mul`      |`(mutable datum), (datum), (datum)`|multiply}
+|`div`      |`(mutable datum), (datum), (datum)`|divide|
+|`mod`      |`(mutable datum), (datum), (datum)`|modulo|
 
 ## binary operations
 |instruction|argument kinds|name|
@@ -104,14 +108,13 @@ And their argument kinds
 |`^`     |`(v)(datum) -- (v)(immutable page)`|make page|
 |`]`     |`(page)(datum) -- (page)(datum)`|index|
 |`>`     |`(page)(datum) -- (page)(datum)`|relative index|
-|`]*`    |`(mutable page)(datum) -- (page)(mutable datum)`|keeping index|
-|`>*`    |`(mutable page)(datum) -- (page)(mutable datum)`|keeping relative index|
+|`]*`    |`(mutable page)(datum) -- (mutable page)(mutable datum)`|keeping index|
+|`>*`    |`(mutable page)(datum) -- (mutable page)(mutable datum)`|keeping relative index|
 |`t`     |`(v)(datum) -- (v)(immutable datum)`|times size of type|
 |`l`     |`(v)(page)  -- (page)(immutable datum)`|length|
 |`o`     |`(v)(page)  -- (page)(immutable datum)`|offset|
 |`~`     |`(v)(v) -- (v)(v)`|swap|
 |`,`     |`(v)(v) -- (NULL)(NULL)`|comma|
-
 
 # detailed overview
 UNFINISHED
