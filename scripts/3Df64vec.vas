@@ -1,4 +1,3 @@
-
 # Do Not import this script together with the 3Df32vec one, several def's clash
 
 jmp 3DF64VEC_END
@@ -7,6 +6,17 @@ def X = 0 # 0
 def Y = 8 # 1t
 def Z = 16 # 2t
 opens
+
+# sta:( 4x4f64matr 4x4f64matr -- 4x4f64matr)
+:4x4f64matrmul, f64
+	def Mat1 = 0$
+	#[[ MA00 MA10 MA20 MAtx ]    [[ MB00 MB10 MB20 MBtx ] 
+	# [ MA01 MA11 MA21 MAty ]  .  [ MB01 MB11 MB21 MBty ] 
+	# [ MA02 MA12 MA22 MAtz ]     [ MB02 MB12 MB22 MBtz ] 
+	# [  0    0    0    1   ]]    [  0    0    0    1   ]]
+	chr print "4x4f64matrmul: TO BE IMPLEMENTED", 0
+	jmp END
+ret
 
 # sta:( 4x4f64matr 3Df64vec -- 4x4f64matr transformed3Df64vec )
 :transf64orm, f64
