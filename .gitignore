@@ -1,7 +1,9 @@
 vic
 vicd
-vic.exe
+*.exe
 *.out
 *.vco
 *.so
+*.prof
+profs/*
 scripts/s/*

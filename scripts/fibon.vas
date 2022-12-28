@@ -13,5 +13,10 @@ u64 input Iterations~, 0^, 0;
 	dec Iterations
 	cmp Iterations, 0
 	Cg jmp loop
-u64 print Fibseq, 0
+
+chr print "Print?\nN/y> ", 1
+chr input Iterations~, 0^, 0
+cmp Iterations, "y"!
+u64 Ce print Fibseq, 0
+
 free 3

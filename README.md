@@ -1,7 +1,8 @@
 # Vanadis (better name tbd)
 
-# Roadmap
+# Improvements
 Some of these can be done in parallel, others can not
+- Colours in errors
 - Better expressions
 	- Seperate macro solve step
 	- Hexadecimal literals
@@ -11,13 +12,14 @@ Some of these can be done in parallel, others can not
 	- Nesting
 - Make sense of the enums and structs
 - Custom IO functions (less libc dependent)
+- Improve multi-source file imports and inserts
 - More support for library functions (dynamic linking?)
 - Make more sense of the bytecode
 	- Versioned bytecode
 	- Expression instructions similar to Instruction instructions
 	- Decompiler
 - Make the stack and codex make more sense, together with function calls
-- Give the user more control over the stack and instruction pointer
+- Give the user more control over the stack and instruction pointers
 
 # Overview of all instructions
 And their argument kinds
