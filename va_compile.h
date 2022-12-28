@@ -54,14 +54,15 @@ void* error(char* errormessage, int readhead, file_t* file){
 	int newlines = 0;
 	for(uint64_t i = 0; i < file->pos; i++)
 		if(file->mfp[i] == '\n') newlines++;
-	fprintf(stderr, "%s at the %dth char:\n", errormessage, readhead + 1);
-	int skip = fprintf(stderr, " %d|", newlines);
+	fprintf(stderr, "\033[91m%s:\033[94m\n", errormessage);
+	int skip = fprintf(stderr, " %d| ", newlines);
+	fprintf(stderr, "\033[0m");
 	fprintf(stderr, "%s\n", UserInput);
 	for(int i = 0; i < readhead + skip - 1; i++)
 		if(i >= skip && IsSpace(UserInput + i - skip))
 			fprintf(stderr, "%c", UserInput[i - skip]);
 		else fprintf(stderr, " ");
-	fprintf(stderr, "<^>\n");
+	fprintf(stderr, "\033[91m<^>\033[0m\n");
 	return NULL;
 }
 
@@ -94,22 +95,23 @@ bool checkkinds(signed char ins, char* kinds, file_t* file){
 	int newlines = 0;
 	for(uint64_t i = 0; i < file->pos; i++)
 		if(file->mfp[i] == '\n') newlines++;
-	fprintf(stderr, "\aThe given arguments on the following line were not of the correct kind:\n");
-	fprintf(stderr, " %d|%s\n\n", newlines, UserInput);
+	fprintf(stderr, "\a\033[91mThe given arguments on the following line were not of the correct kind:\033[0m\n");
+	fprintf(stderr, " \033[94m%d| \033[0m%s\n\n", newlines, UserInput);
 
-	fprintf(stderr, "The instruction '%s' expects:\n\t%s ", instructionString[ins], instructionString[ins]);
+	fprintf(stderr, "\033[91mThe instruction '\033[96m%s\033[91m' expects:\n\t\033[96m%s ", instructionString[ins], instructionString[ins]);
 	char template[4][14] = {"datum", "page", "mutable datum", "mutable page"};
 	for(signed char i = 0; i < argumentAmount && instructionKinds[ins][i] != '_'; i++)
-		fprintf(stderr, "(%s), ", templkindsw(template, instructionKinds[ins][i]));
+		fprintf(stderr, "\033[95m(%s)\033[35m, ", templkindsw(template, instructionKinds[ins][i]));
 
 	char results[6][16] = {"datum", "page", "immutable datum", "immutable page", "mutable datum", "mutable page"};
-	fprintf(stderr, "\b\b;\nbut was given:\n\t%s ", instructionString[ins]);
+	fprintf(stderr, "\b\b;\n\033[91mbut was given:\n\t\033[96m%s ", instructionString[ins]);
 	signed char argnr;
 	for(argnr = 0; argnr < argumentAmount && kinds[argnr] != '_'; argnr++)
-		fprintf(stderr, "(%s), ", inskindsw(results, kinds[argnr], instructionKinds[ins][argnr]));
+		fprintf(stderr, "\033[95m(%s)\033[35m, ", inskindsw(results, kinds[argnr], instructionKinds[ins][argnr]));
 	if(argnr != 0)
 		fprintf(stderr, "\b\b;\n");
 	else fprintf(stderr, ";\n");
+	fprintf(stderr, "\033[0m");
 	return false;
 }
 
@@ -144,7 +146,7 @@ void* includef(file_t* desfile, int i, memowy_t* includes){
 memowy_t* letbind(file_t* file, int i, memowy_t* binds){
 	SkipSpaces(UserInput, userInputLen, &i);
 	if(UserInput[i] < 'A' || UserInput[i] > 'Z')
-		return error("\aBindings must start with a capital letter.\n", i, file);
+		return error("\aBindings must start with a capital letter", i, file);
 
 	int begin = i;
 	while(IsAlph(UserInput + i) || IsNr(UserInput + i) || UserInput[i] == '_')
@@ -225,7 +227,7 @@ memowy_t* enumbind(file_t* file, int i, memowy_t* binds){
 	do{
 		if(UserInput[i] < 'A' || UserInput[i] > 'Z'){
 			free(memowy.mem);
-			return error("\aBindings must start with a capital letter.\n", i, file);;
+			return error("\aBindings must start with a capital letter", i, file);;
 		}
 		bindlen = delimstrlen(UserInput + i, ' ');
 		/* setting the binding */
@@ -323,7 +325,7 @@ lbl_t* savelabel(file_t* file, char* input, int* readhead, lbl_t* labels, file_t
 		i++;
 	if(i - *readhead == 0){
 		labels->definedlabels[labels->labelam-1] = malloc(1);
-		return error("\aLabel can not be 0 characters long, allowed characters are: a-z, A-Z, 0-9, _ and -.\n", i, src);
+		return error("\aLabel can not be 0 characters long, allowed characters are: a-z, A-Z, 0-9, _ and -", i, src);
 	}
 //	printf("copy it\n");
 	labels->definedlabels[labels->labelam-1] = malloc(i - *readhead + 2);
@@ -348,7 +350,7 @@ lbl_t* savejmp(file_t* file, char* input, int* readhead, lbl_t* labels, file_t* 
 		i++;
 	if(i - *readhead == 0){
 		labels->requiredlabels[labels->jumpam-1] = malloc(1);
-		return error("\aLabel can not be 0 characters long, allowed characters are: a-zA-Z0-9_-\n", i, src);
+		return error("\aLabel can not be 0 characters long, allowed characters are: a-zA-Z0-9_-", i, src);
 	}
 //	printf("copy it\n");
 	labels->requiredlabels[labels->jumpam-1] = malloc(i - *readhead + 2);
@@ -435,7 +437,7 @@ ptr_t buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 				section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
 				(*section.u16)++;
 				if(kinds[0]!='d' && kinds[0]!='D'){
-					error("\aOperator '$' expects a datum, not a page or nothing.\n", *readhead, sourcefile);
+					error("\aOperator '$' expects a datum, not a page or nothing", *readhead, sourcefile);
 					goto endonerror;
 				}
 				kinds[0] = 'P';
@@ -447,7 +449,7 @@ ptr_t buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 				section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
 				(*section.u16)++;
 				if(kinds[0]!='d' && kinds[0]!='D'){
-					error("\aOperator '@' expects a datum, not a page or nothing.\n", *readhead, sourcefile);
+					error("\aOperator '@' expects a datum, not a page or nothing", *readhead, sourcefile);
 					goto endonerror;
 				}
 				kinds[0] = 'P';
@@ -465,7 +467,7 @@ ptr_t buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 				section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
 				(*section.u16)++;
 				if(kinds[0]!='p' && kinds[0]!='P'){
-					error("\aOperator '!' expects a page, not a datum or nothing.\n", *readhead, sourcefile);
+					error("\aOperator '!' expects a page, not a datum or nothing", *readhead, sourcefile);
 					goto endonerror;
 				}
 				kinds[0] = kinds[0]=='P'?'D':'d';
@@ -477,7 +479,7 @@ ptr_t buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 				section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
 				(*section.u16)++;
 				if(kinds[0]!='d' && kinds[0]!='D'){
-					error("\aOperator '^' expects a datum, not a page or nothing.\n", *readhead, sourcefile);
+					error("\aOperator '^' expects a datum, not a page or nothing", *readhead, sourcefile);
 					goto endonerror;
 				}
 				kinds[0] = 'p';
@@ -489,7 +491,7 @@ ptr_t buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 				section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
 				(*section.u16)++;
 				if(!(kinds[0]=='d' || kinds[1]=='p' || kinds[0]=='D' || kinds[1]=='P')){
-					error("\aOperator ']' expects a page and a datum (in that order).\n", *readhead, sourcefile);
+					error("\aOperator ']' expects a page and a datum (in that order)", *readhead, sourcefile);
 					goto endonerror;
 				}
 				kinds[0] = kinds[1]=='P'?'D':'d';
@@ -501,7 +503,7 @@ ptr_t buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 				section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
 				(*section.u16)++;
 				if(!(kinds[0]=='d' || kinds[1]=='p' || kinds[0]=='D' || kinds[1]=='P')){
-					error("\aOperator '>' expects a page and a datum (in that order).\n", *readhead, sourcefile);
+					error("\aOperator '>' expects a page and a datum (in that order)", *readhead, sourcefile);
 					goto endonerror;
 				}
 				kinds[0] = kinds[1]=='P'?'D':'d';
@@ -511,7 +513,7 @@ ptr_t buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 //				printf("op is *\n");
 				if(prev == opEntry || prev == opRef){
 					if(kinds[1]!='P'){
-						error("\aThis operator expects its first argument to be a mutable page.\n", *readhead, sourcefile);
+						error("\aThis operator expects its first argument to be a mutable page", *readhead, sourcefile);
 						goto endonerror;
 					}
 					*(section.u8 - 1 + *section.u16) += 2;
@@ -523,7 +525,7 @@ ptr_t buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 				section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
 				(*section.chr)++;
 				if(kinds[0]!='p' && kinds[0]!='P'){
-					error("\aOperator 'l' expects a page, not a datum or nothing.\n", *readhead, sourcefile);
+					error("\aOperator 'l' expects a page, not a datum or nothing", *readhead, sourcefile);
 					goto endonerror;
 				}
 				kinds[0] = 'd';
@@ -535,7 +537,7 @@ ptr_t buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 				section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
 				(*section.u16)++;
 				if(kinds[0]!='p' && kinds[0]!='P'){
-					error("\aOperator 'o' expects a page, not a datum or nothing.\n", *readhead, sourcefile);
+					error("\aOperator 'o' expects a page, not a datum or nothing", *readhead, sourcefile);
 					goto endonerror;
 				}
 				kinds[0] = 'd';
@@ -547,7 +549,7 @@ ptr_t buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 				section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
 				(*section.u16)++;
 				if(kinds[0]!='d' && kinds[0]!='D'){
-					error("\aOperator 't' expects a datum, not a page or nothing.\n", *readhead, sourcefile);
+					error("\aOperator 't' expects a datum, not a page or nothing", *readhead, sourcefile);
 					goto endonerror;
 				}
 				kinds[0] = 'd';
@@ -559,7 +561,7 @@ ptr_t buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 				section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
 				(*section.u16)++;
 				if(kinds[0] == '_' || kinds[1] == '_'){
-					error("\aNot enough elements to swap.\n", *readhead, sourcefile);
+					error("\aNot enough elements to swap", *readhead, sourcefile);
 					goto endonerror;
 				}
 				dummy = kinds[0]; kinds[0] = kinds[1]; kinds[1] = dummy;
@@ -568,7 +570,7 @@ ptr_t buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 			case ',':
 //				printf("kind is , %x\n", opComma);
 				if(commaam + 1>= argumentAmount){
-					error("\aToo many arguments. (maximum is 4)\n", *readhead, sourcefile);
+					error("\aToo many arguments. (maximum is 4)", *readhead, sourcefile);
 					goto endonerror;
 				}
 				argkinds[commaam] = kinds[0];

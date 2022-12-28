@@ -74,7 +74,7 @@ char* mfgetsS(char* string, int size, file_t* file){
 file_t* mfopen(char* path, file_t* file){
 	FILE* fp = fopen(path, "r");
 	if(fp == NULL){
-		fprintf(stderr, "\aVanadis: Could not open file '%s'.\n", path);
+		fprintf(stderr, "\aVanadis: \033[91mCould not open file '%s'.\033[0m\n", path);
 		return NULL;
 	}
 
