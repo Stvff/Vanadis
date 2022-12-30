@@ -1,7 +1,7 @@
 set -e
 
 out=vic
-CC=clang
+CC=gcc
 
 if [[ $1 == help ]]; then
 	echo "The Vanadis 'build' script"
@@ -25,16 +25,16 @@ elif [[ $1 == lib ]]; then
 	$CC vic.c -lm -Wall -Os -lvic -D libraryincluded -o $out
 elif [[ $1 == windows ]]; then
 	echo "windows"
-	out=vic.exe
+	out=$out.exe
 	CC=x86_64-w64-mingw32-gcc
 	$CC vic.c -lm -Wall -Os -o $out
 elif [[ $1 == profile ]]; then
 	echo "profile"
 	$CC vic.c -lm -Wall -Os -o $out -pg
 	./$out scripts/speed.vas
-	gprof $out gmon.out > speed.prof
+	gprof $out gmon.out > profs/speed.prof
 	echo "10000000\n\n" | $out scripts/fibon.vas
-	gprof $out gmon.out > fibon.prof
+	gprof $out gmon.out > profs/fibon.prof
 	rm gmon.out
 else
 	echo "debug"
