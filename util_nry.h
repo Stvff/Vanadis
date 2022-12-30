@@ -20,7 +20,9 @@ typedef union {
 enum datatypes {Chr = 0, I8, U8, I16, U16, I32, U32, I64, U64, F32, F64};
 //                    0   1   2    3    4    5    6    7    8    9   10
 
-int typeBylen(int type){
+int8_t typelen[11] = { 1, 1,  1,  2,   2,   4,   4,   8,   8,   4,   8};
+
+/*int typeBylen(int type){
 	switch(type){
 		case Chr...U8: return 1; break;
 		case I16: case U16: return 2; break;
@@ -28,7 +30,7 @@ int typeBylen(int type){
 		case I64: case U64: case F64: return 8; break;
 	}
 	return 1;
-}
+}*/
 
 uint64_t integer(ptr_t ptr, int type){
 	switch(type){
@@ -133,7 +135,7 @@ nry_t* copynry(nry_t* des, nry_t* src){
 }
 
 nry_t* inttonry(nry_t* des, uint64_t inte, int type){
-	remakenry(des, typeBylen(type));
+	remakenry(des, typelen[type]);
 	switch(type){
 		case Chr...U8: *des->base.u8 = (uint8_t) inte; break;
 		case I16: case U16: *des->base.u16 = (uint16_t) inte; break;
@@ -225,7 +227,7 @@ ptr_t inputtonrs(ptr_t des, char* input, int start, int* end, int type){
 
 nry_t* inptonry(nry_t* des, char* input, int* start, int type){
 	int i = *start;
-	int tl = typeBylen(type);
+	int tl = typelen[type];
 	des->len = tl;
 	while(IsNr(input + i) || IsSpace(input + i) || input[i] == '+' || input[i] == '\'')
 		if(input[i++] == '+') des->len += tl;
@@ -253,7 +255,7 @@ void aprintnry(nry_t* src, int type, bool endline){
 	}
 //	int inc = typeBylen(type);
 	if(src->len == 0){ printf("'"); goto endoffunc;}
-	for(size_t i = 0; i*typeBylen(type) < src->len; i += 1) {
+	for(size_t i = 0; i*typelen[type] < src->len; i += 1) {
 		if(src->base.u8 + i == src->fst.u8) printf("'");
 		switch(type){
 			case I8: printf("%d + ", *(src->base.i8 + i)); break;

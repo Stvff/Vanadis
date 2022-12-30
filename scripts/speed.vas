@@ -3,7 +3,7 @@ def Start = 2$!
 def I = 1$!
 u64
 alloc 3
-set Limit, 60 000 000
+set Limit, 600 000 000
 time Start
 :loop, u64
 	inc I

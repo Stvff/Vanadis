@@ -235,7 +235,7 @@ memowy_t* enumbind(file_t* file, int i, memowy_t* binds){
 		/* setting the base as that binding's resolution */
 		binds->pos = allocmemwy(binds, memowy.mem + 2, lenwy(memowy.mem));
 		printinttostr(data(binds) + lengf(binds) - 5,
-					  bindcn*typeBylen(enumtype));
+					  bindcn*typelen[enumtype]);
 		/* get ready for next binding */
 		i += bindlen;
 		SkipSpaces(UserInput, userInputLen, &i);
@@ -605,14 +605,14 @@ ptr_t buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 				break;
 			case '0'...'9': case '-': case '\'': case '+':
 				inptonry(&dnry, UserInput, readhead, globalType);
-				if(dnry.len / typeBylen(globalType) == 1){
+				if(dnry.len / typelen[globalType] == 1){
 //					printf("kind is nrs %x\n", opNrs);
 					dummy = opNrs;
 					section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
 					(*section.u16)++;
 					/*data*/
-					section.chr = arrapp(section.chr, *section.u16, dnry.fst.chr, typeBylen(globalType));
-					*section.u16 += (uint16_t) typeBylen(globalType);
+					section.chr = arrapp(section.chr, *section.u16, dnry.fst.chr, typelen[globalType]);
+					*section.u16 += (uint16_t) typelen[globalType];
 					(*readhead)--;
 					kinds[1] = kinds[0]; kinds[0] = 'd';
 					prev = opNrs;

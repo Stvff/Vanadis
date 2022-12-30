@@ -233,7 +233,7 @@ void stackerror(int64_t ref){
 }
 
 bool evalexpr(char* exprpos, uint16_t exprlen, nry_t** args, ptr_t* nrs, nry_t* ALLp, uint64_t* ALLd){
-	ptr_t expr; expr.chr = exprpos;
+	ptr_t expr = {exprpos};
 	bool ret = true;
 	uint16_t val = 0;
 	nry_t* regp[2] = {NULL, NULL};
@@ -308,7 +308,7 @@ bool evalexpr(char* exprpos, uint16_t exprlen, nry_t** args, ptr_t* nrs, nry_t* 
 				regp[0] = &ALLp[argnr*2 + anp];
 				regp[0]->base = regd[0];
 				regp[0]->fst = regp[0]->base;
-				regp[0]->len = typeBylen(globalType);
+				regp[0]->len = typelen[globalType];
 				regd[0].p = NULL;
 				break;
 // entry, direct
@@ -358,7 +358,7 @@ bool evalexpr(char* exprpos, uint16_t exprlen, nry_t** args, ptr_t* nrs, nry_t* 
 				dummy = integer(regd[0], globalType);
 				and ^= 1;
 				regd[0].u64 = &ALLd[argnr*2 + and];
-				*regd[0].u64 = dummy * typeBylen(globalType);
+				*regd[0].u64 = dummy * typelen[globalType];
 				if(globalType == F32) *regd[0].f32 = (float) *regd[0].u64;
 				else if(globalType == F64) *regd[0].f64 = (double) *regd[0].u64;
 				regp[0] = NULL;
@@ -405,7 +405,7 @@ bool evalexpr(char* exprpos, uint16_t exprlen, nry_t** args, ptr_t* nrs, nry_t* 
 				regp[0] = NULL;
 				regd[1] = regd[0];
 				regd[0].p = expr.u8 + readhead;
-				readhead += typeBylen(globalType) - 1;
+				readhead += typelen[globalType] - 1;
 				break;
 // brk
 			case opBrk:
@@ -762,7 +762,7 @@ bool execute(char ins, nry_t** args, ptr_t* nrs){
 					strtonry(args[0], args[1]->fst.chr, (int*)&dummy);
 				break;
 			case I8 ... F64:
-				remakenry(args[0], typeBylen(globalType));
+				remakenry(args[0], typelen[globalType]);
 				if(*nrs[2].u8 == 0){
 					fgets(UserInput, userInputLen, stdin);
 					inputtonrs(args[0]->base, UserInput, 0, (int*)&dummy, globalType);
