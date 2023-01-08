@@ -339,9 +339,13 @@ bool evalexpr(char* exprpos, uint16_t exprlen, nry_t** args, ptr_t* nrs, nry_t* 
 				break;
 // length
 			case opLength:
-				regd[0].u64 = &regp[0]->len;
-				if(globalType == F32) *regd[0].f32 = (float) *regd[0].u64;
-				else if(globalType == F64) *regd[0].f64 = (double) *regd[0].u64;
+				if(globalType == F32 || globalType == F64){ // All this could be optimised by using the same method as opOffset and opSizeof
+					and ^= 1;
+					regd[0].u64 = &ALLd[argnr*2 + and];
+					if(globalType == F32) *regd[0].f32 = (float) regp[0]->len;
+					else if(globalType == F64) *regd[0].f64 = (double) regp[0]->len;
+				} else
+					regd[0].u64 = &regp[0]->len;
 				regp[0] = NULL;
 				break;
 // offset
@@ -349,8 +353,8 @@ bool evalexpr(char* exprpos, uint16_t exprlen, nry_t** args, ptr_t* nrs, nry_t* 
 				and ^= 1;
 				regd[0].u64 = &ALLd[argnr*2 + and];
 				*regd[0].u64 = regp[0]->fst.u8 - regp[0]->base.u8;
-				if(globalType == F32) *regd[0].f32 = (float) *regd[0].f32;
-				else if(globalType == F64) *regd[0].f64 = (double) *regd[0].f64;
+				if(globalType == F32) *regd[0].f32 = (float) *regd[0].u64;
+				else if(globalType == F64) *regd[0].f64 = (double) *regd[0].u64;
 				regp[0] = NULL;
 				break;
 // sizeof
@@ -524,7 +528,7 @@ bool execute(char ins, nry_t** args, ptr_t* nrs){
 			case I32: case U32: (*nrs[0].u32)++; break;
 			case I64: case U64: (*nrs[0].u64)++; break;
 			case F32: (*nrs[0].f32)++; break;
-			case F64: (*nrs[0].f32)++; break;
+			case F64: (*nrs[0].f64)++; break;
 		} break;
 // dec
 		case dec: switch(globalType){

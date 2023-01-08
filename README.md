@@ -17,7 +17,10 @@ Some of these can be done in parallel, others can not
 - Make more sense of the bytecode
 	- Versioned bytecode
 	- Expression instructions similar to Instruction instructions
+		- conditionals become relative jmps instead of skips (for future code block support?)
 	- Decompiler
+- jumptables
+- label namespaces
 - Make the stack and codex make more sense, together with function calls
 - Give the user more control over the stack and instruction pointers
 

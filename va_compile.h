@@ -178,7 +178,7 @@ int64_t psi(int64_t g,int64_t h,int64_t n){
 	return (n % (int64_t)pow((float)g, (float)(h+1)))/(int64_t)pow((float)g,(float)h);
 }
 
-uint8_t printinttostr(char* string, uint8_t integ){
+uint8_t printu8tostr(char* string, uint8_t integ){
 	char chrrr;
 	bool itmaynotzero = true;
 	for(int i = 0; i < 3; i++){
@@ -234,7 +234,7 @@ memowy_t* enumbind(file_t* file, int i, memowy_t* binds){
 		binds->pos = allocstrmemwy(binds, UserInput + i, bindlen);
 		/* setting the base as that binding's resolution */
 		binds->pos = allocmemwy(binds, memowy.mem + 2, lenwy(memowy.mem));
-		printinttostr(data(binds) + lengf(binds) - 5,
+		printu8tostr(data(binds) + lengf(binds) - 5,
 					  bindcn*typelen[enumtype]);
 		/* get ready for next binding */
 		i += bindlen;

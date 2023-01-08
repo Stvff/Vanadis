@@ -1,0 +1,48 @@
+
+def Buffer = 0$
+def Buffersize = 64
+def Spacesize = 1000
+def ChrEmpty = " "
+def ChrBall = "O" # hashtag in strings does wierd in defs
+def FramesPerFrame = 100
+
+alloc 1
+u64 rsz Buffer, Buffersize
+fill Buffer, ChrEmpty!, Buffersize
+
+enum:f64 T   Target  Fc  Dt  R   G    V   P     OldP  Reg = 1$
+f64 push 0 + 100   + 0 + 1 + 1 + -1 + 0 + 750 + 0   + 0
+div Dt, Dt, 1000
+
+:loop, f64
+	add V, V, G
+	mul Reg, Dt, V
+	add P, P, Reg
+	jmp collision;:done_collision
+	jmp draw;:done_draw
+	f64 add T, T, Dt
+	cmp Target, T
+	Cg jmp loop
+jmp END
+
+:collision, f64
+	cmp P, R
+	Cs mul V, V, -1
+	jmp done_collision
+
+:draw, f64
+	inc Fc
+	cmp Fc, FramesPerFrame
+		Cs jmp done_draw
+		set Fc, 0
+	div Reg, Buffersize, Spacesize
+	mul Reg, Reg, P
+	ex OldP Buffer[~]*
+	chr set Buffer!, ChrEmpty!
+	f64 ex Reg Buffer[~]*
+	chr set Buffer!, ChrBall!
+	f64 set OldP, Reg
+	chr print Buffer[0]* ~, 0
+	jmp done_draw
+
+:END
