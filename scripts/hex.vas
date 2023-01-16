@@ -1,13 +1,23 @@
-# This script gives a simple example of converting a byte to printable hexadecimal
-alloc 1
-def Nr = 178
-#u8 push Nr^
-#def Nr = 1$!
+# dumps hex
+insert stdlib.vas
 
-u8 and 0$[1], Nr, 15
-set 0$[1], 0$[1] "0123456789ABCDEF"[~]
+call fload
 
-u8 rshf 0$[0], Nr, 4
-set 0$[0], 0$[0] "0123456789ABCDEF"[~]
+def Src = 1@
+def Buffer = 0@
+u64
+push "0x\0\0\0\0\0\0\0\0"
+mul Buffer[2], Src.l, 2
+add Buffer[2], Buffer[2], 2
+rsz Buffer, Buffer[2]
 
-chr print "0x", 1; print 0$, 0
+ex Buffer[2]* Src[0]*
+:hexconvloop, u8
+	and Buffer<1>, Src!, 15
+	set Buffer<1>, Buffer<1> "0123456789ABCDEF"[~]
+	rshf Buffer!, Src!, 4
+	set Buffer!, Buffer! "0123456789ABCDEF"[~]
+	u64 cmp Buffer<2>* Src<1>* ~.o, 0
+		Cn jmp hexconvloop
+
+chr print Buffer, 0

@@ -32,6 +32,7 @@ elif [[ $1 == profile ]]; then
 	echo "profile"
 	$CC vic.c -lm -Wall -Os -o $out -pg
 	./$out scripts/speed.vas
+	mkdir -p ./profs/
 	gprof $out gmon.out > profs/speed.prof
 	echo "10000000\n\n" | $out scripts/fibon.vas
 	gprof $out gmon.out > profs/fibon.prof
@@ -41,5 +42,5 @@ else
 	$CC -lm -Wall -g3 -fsanitize=address vic.c -o $out
 fi
 
-cp Vanadis.yaml ~/.config/micro/syntax/
 ./$out test.vas
+cp Vanadis.yaml ~/.config/micro/syntax/
