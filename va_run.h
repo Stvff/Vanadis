@@ -885,7 +885,7 @@ bool run(file_t* runfile){
 				skip: if(runfile->pos < runfile->len){
 					head = runfile->mfp[runfile->pos]/2;
 					if(head == call || head == jmp) runfile->pos += 9;
-					else if(head == ret){ runfile->pos += 1; globalType = STANDARDtype;}
+					else if(head == ret) runfile->pos += 1;
 					else runfile->pos += *((ptr_t) (runfile->mfp + runfile->pos + 1)).u16 + 1;
 //					printf("skip, runfile->pos: %lx\n", runfile->pos);
 				} break;
