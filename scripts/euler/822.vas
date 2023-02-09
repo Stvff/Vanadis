@@ -1,0 +1,86 @@
+# A list initially contains the numbers 2, 3, ..., n
+# At each round, the smallest number in the list is replaced by its square.
+# If there are more than one such number, then only one of them is replaced
+# Let S(n, m) be the sum of all numbers in the list after m rounds
+# S(5, 3) = 34 and S(10, 100) % 1234567891 = 845339386
+
+# Find S(10^4, 10^16) % 1234567891
+# Program takes n and m as command line arguments
+
+u64 push 0 + 0 + 0 + 1234567891
+def Globals = 0@
+enum:u64 Staptr N M Mod = Globals
+
+staptr Staptr
+cmp Staptr, 2
+	chr Cn print "Incorrect number of arguments", 0
+	Cn jmp END
+u64
+
+alloc 1; opens
+	def ArgN = 0$
+	def ArgM = 1$
+	def Globals = 2$
+	def Temp = 3$
+	input Temp, ArgN, 1
+	set N, Temp!
+	input Temp, ArgM, 1
+	set M, Temp!
+free 1; clons
+
+mov 0$, Globals
+def Globals = 0$
+free 2
+
+def List = 1$
+alloc 1; opens
+	def I = Globals[0]
+	sub I, N, 1
+	rsz List, I.t
+	set I, 0
+	:loop_fill, u64
+		add I.t List[~], I, 2
+		cmp I.t List[~], N
+		inc I
+			Cs jmp loop_fill
+clons
+
+push 0 + 0; opens
+	enum:u64 Smallest Smallest_location = 0@
+	:round, u64
+		set Smallest, List[0]
+		set Smallest_location, 0
+		:find_min, u64
+			cmp List!, Smallest
+				Cs set Smallest, List!
+				Cs div Smallest_location, List.o, 8
+			cmp List<1t>* ~.o, 0
+				Cn jmp find_min
+#		dprint Smallest, 0
+		print List, 0
+		mul Smallest_location.t List[~], Smallest, Smallest
+		dec M
+		cmp M, 0
+			Cg jmp round
+free 1; clons
+
+chr print "----------------", 0; u64
+
+opens
+	def Sum = Globals[0]
+	set Sum, 0
+	:sum, u64
+		mod List!, List!, Mod
+		add Sum, Sum, List!
+		mod Sum, Sum, Mod
+		cmp List<1t>* ~.o, 0
+		Cn jmp sum
+	dprint Sum, 0
+clons
+
+# print Globals, 0
+# print List, 0
+
+jmp END
+
+:END

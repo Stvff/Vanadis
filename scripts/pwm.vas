@@ -1,0 +1,41 @@
+jmp setup
+def Duty_cycle = 51
+def Percentage_const = 100
+def Period = 10
+
+# mst: ( OI , Time + Edge + Pos -- IO , Time + Edge + Pos )
+:pwm, u64; opens
+	def IO = -2$!
+	enum:u64 Time Edge Pos = -1$
+	mod Pos, Time, Period
+	cmp Pos, 0
+	chr
+		Ce set IO, 0
+		Ce print "low", 0
+		Ce ret
+	u64 cmp Pos, Edge
+	chr
+		Ce set IO, 1
+		Ce print "high", 0
+clons; ret
+
+
+:setup, u64
+	alloc 1
+	def IO = 0$!
+	enum:u64 Time Edge = 1$
+	push     0   +0   +0
+	set Edge, Duty_cycle
+	sub Edge, Percentage_const, Edge
+	mul Edge, Period, Edge
+	div Edge, Edge, Percentage_const
+jmp main
+
+:main, u64
+	inc Time
+	call pwm
+	chr
+	cmp IO, 0
+	Cn print "               ###", 0
+	Ce print "###               ", 0
+	jmp main

@@ -1,0 +1,48 @@
+# is (== (mod (+ a b) c) (mod (+ (mod a c) (mod b c)) c)) always true?
+
+def LimLim = 100000000
+
+u64 push 0  + 0 + 0 + 0 + 0 + 0   + 0   + 1  + 100000000
+enum:u64 Time A   B   TA  TB  Res1  Res2  Mod  Lim = 0$
+
+time Time
+:for, u64
+			add Res1, A, B
+			mod Res1, Res1, Mod
+
+			mod TA, A, Mod
+			mod TB, B, Mod
+			add Res2, TA, TB
+			mod Res2, Res2, Mod
+
+			cmp Res1, Res2
+				Cn jmp nequal
+				:cont, u64
+			inc B
+			cmp B, Lim
+				Cs jmp for
+		inc A
+		cmp A, Lim
+			Cs jmp for
+	inc Mod
+	cmp Mod, Lim
+		Cs jmp for
+mul Lim, Lim, 2
+cmp Lim, LimLim
+	dprint Lim, 0
+	time A
+	sub Time, A, Time
+	dprint Time, 0
+	time Time
+	chr print "-------", 0
+	Cs jmp for
+
+jmp END
+
+:nequal, u64
+	dprint Res1, 0
+	dprint Res2, 0
+	chr print "---AAA---", 0
+	jmp END
+
+:END

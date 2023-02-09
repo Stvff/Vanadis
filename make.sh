@@ -42,5 +42,5 @@ else
 	$CC -lm -Wall -g3 -fsanitize=address vic.c -o $out
 fi
 
-./$out test.vas
+./$out -dc test.vas
 cp Vanadis.yaml ~/.config/micro/syntax/
