@@ -1,4 +1,55 @@
-f64 push 25^
-dprint 0$!, 0
-lib "sqrt", 0$!
-dprint 0$!, 0
+insert scripts/math.vas
+
+alloc 1
+def Var = 0$!
+
+chr print "sqrt -----", 0
+	f32 set Var, 25
+	dprint Var, 0
+	lib Sqrt_f32, Var, Var
+	dprint Var, 0
+	chr print "---", 0
+	f64 set Var, 25
+	dprint Var, 0
+	lib Sqrt_f64, Var, Var
+	dprint Var, 0
+
+chr print "sin ------", 0
+	f32 set Var, 3
+	dprint Var, 0
+	lib Sin_f32, Var, Var
+	dprint Var, 0
+	chr print "---", 0
+	f64 set Var, 3
+	dprint Var, 0
+	lib Sin_f64, Var, Var
+	dprint Var, 0
+
+chr print "cos ------", 0
+	f32 set Var, 3
+	dprint Var, 0
+	lib Cos_f32, Var, Var
+	dprint Var, 0
+	chr print "---", 0
+	f64 set Var, 3
+	dprint Var, 0
+	lib Cos_f64, Var, Var
+	dprint Var, 0
+
+chr print "tan ------", 0
+	f32 set Var, 3
+	dprint Var, 0
+	lib Tan_f32, Var, Var
+	dprint Var, 0
+	chr print "---", 0
+	f64 set Var, 3
+	dprint Var, 0
+	lib Tan_f64, Var, Var
+	dprint Var, 0
+
+chr print "Pi ------", 0
+	f32 lib Pi_f32, Var
+	dprint Var, 0
+	chr print "---", 0
+	f64 lib Pi_f64, Var
+	dprint Var, 0

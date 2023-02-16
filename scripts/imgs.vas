@@ -1,0 +1,326 @@
+#this library has some drawing functions
+#XXX FIRST DEFINE IMGS_bpp BEFORE YOU IMPORT THE LIBRARY XXX
+#def IMGS_bpp = 3 # bytes per pixel for imgs.vas
+
+jmp IMGS_END
+opens
+enum:u32 Width Height Bpp = .
+def U8 = 3
+
+################################################################ stackchans
+# sta: ( Base Base_info Over Over_info Ref_color -- Base Base_info Over Over_info Ref_color )
+:stack_chans, chr; opens
+	def Base      = -5$
+	def Base_info = -4$
+	def Over      = -3$
+	def Over_info = -2$
+	def Ref_color = -1$
+	def Sample    =  0$
+	pecmp Base_info, Over_info
+		Cn print "\aaddchan got two images which were not the same!", 0
+		Cn ret
+	alloc 1
+	rsz Sample, Ref_color.l
+	u32 ex (Base[0]*) (Base[0]*)
+	:stack_chans_loop, u32
+		memv Sample, Over, Over.o, Over_info.Bpp
+		pecmp Ref_color, Sample
+			Cn memv Base, Sample, 0, Over_info.Bpp
+		cmp (Base_info.Bpp Base<~>*) (Over_info.Bpp Over<~>*) ~o, 0
+			Cn jmp stack_chans_loop
+	free 1
+ret; clons
+
+################################################################ addchans
+# sta: ( Img1 Info1 Img2 Info2 -- Img Info )
+:addchans, chr; opens
+	def Img1 = -4$
+	def Info1 = -3$
+	def Img2 = -2$
+	def Info2 = -1$
+	enum:u16 L H = 0$
+	pecmp Info1, Info2
+		Cn print "\aaddchan got two images which were not the same!", 0
+		Cn ret
+	u16 push 0 + 0
+	u8 ex (Img1[0]*) (Img2[0]*)
+	:addchans_loop, u8
+		set L, Img1!
+		set H, Img2!
+		u16
+		add L, L, H
+		div L, L, 2
+		u8 set Img1!, L
+		u32 cmp (Img1<1>*) (Img2<1>*) ~o, 0
+			Cn jmp addchans_loop
+	free 3
+ret; clons
+
+################################################################ setchan
+# sta: ( Img1 Info1 Img2 Info2 Mask -- Img Info )
+:setchan, chr; opens
+	def Img1 = -5$
+	def Info1 = -4$
+	def Img2 = -3$
+	def Info2 = -2$
+	def Mask = -1$
+	pecmp Info1, Info2
+		Cn print "\asetchan got two images which were not the same!", 0
+		Cn ret
+	u8 ex (Mask[0]*) (Img1[0]*) (Img2[0]*) # there was a segfault here before I added the u8
+	:setchan_loop, u8
+		cmp Mask!, 0
+			Cn set Img1!, Img2!
+		u32 cmp (Mask<1>*) (Img1<1>*) (Img2<1>*) ~o, 0
+			Cn jmp setchan_loop
+	free 3
+ret; clons
+
+################################################################ floattoimg
+# sta: ( data width+height+Bpp norm -- image width+height+Bpp )
+opens
+:f32toimg, u32
+	def Data = -3$
+	def M    = -2$
+	def Norm = -1$!
+	alloc 2
+	def Val   =  0$!
+	def Image =  1$
+
+	mul Image!, M.Width, M.Height
+	mul Image!, Image!, M.Bpp
+	rsz Image, Image!
+	set Image!, 0
+
+	ex Data[0]*
+	:f32ti_conv, f32
+		div Val, Data<0>, Norm
+		mul Val, Val, 255
+		scmp Val, 0
+			Cs mul Val, Val, -1
+		cast Val, Val, U8
+		u32 fill Image, Val, M.Bpp
+		ex (Data<4>*) (M.Bpp Image<~>*) # 4 == 1t in f32
+		ecmp Image.o, 0
+		Cn jmp f32ti_conv
+	pop -3$
+	free 2
+ret
+
+:f64toimg, u32
+	alloc 2
+	mul Image!, M.Width, M.Height
+	mul Image!, Image!, M.Bpp
+	rsz Image, Image!
+	set Image!, 0
+
+	ex Data[0]*
+	:f64ti_conv, f64
+		div Val, Data<0>, Norm
+		mul Val, Val, 255
+		scmp Val, 0
+			Cs mul Val, Val, -1
+		cast Val, Val, U8
+		u32 fill Image, Val, M.Bpp
+		ex (Data<8>*) (M.Bpp Image<~>*) # 8 == 1t in f64
+		ecmp Image.o, 0
+		Cn jmp f64ti_conv
+	pop -3$
+	free 2
+ret
+
+:f64tocolour, u32
+	alloc 2
+	mul Image!, M.Width, M.Height
+	mul Image!, Image!, M.Bpp
+	rsz Image, Image!
+	set Image!, 0
+
+	ex Data[0]*
+	:f64tc_conv, f64
+		div Val, Data<0>, Norm
+		mul Val, Val, 255
+		cmp Val, 0
+			Cs mul Val, Val, -1
+		cast Val, Val, U8
+		u8
+		Cs set Image<2>, Val
+		Cge set Image<1>, Val
+		u32 ex (Data<8>*) (M.Bpp Image<~>*) # 8 == 1t in f64
+		ecmp Image.o, 0
+		Cn jmp f64tc_conv
+	pop -3$
+	free 2
+ret
+clons
+
+################################################################ blank
+# sta: ( width+heigh+Bpp colour -- image width+height+Bpp )
+:blank, u32; opens
+	def Mdata  = -2$
+	def Colour = -1$
+	alloc 1
+	def Data   =  0$
+
+	mul Data!, Mdata.Width, Mdata.Height
+	mul Data!, Data!, Mdata.Bpp
+	rsz Data, Data!
+	set Data!, 0
+
+	alloc 1
+	rsz 1$, Colour.l
+	pecmp Colour, 1$
+	free 1
+	Ce jmp blank_skip
+
+	:blank_fill, u32
+		memv Data, Colour, 0, Mdata.Bpp
+		ecmp Mdata.Bpp Data ~>* ~ o, 0
+			Cn jmp blank_fill
+	:blank_skip
+
+	# sta: ( width+height+Bpp colour 'data --
+	flip 3
+	alloc 1
+	# image --
+	unf 3
+	# image width+height+Bpp 'colour data --
+	pop -2$
+	free 1
+	# image width+height+Bpp )
+ret; clons
+
+################################################################ line
+# sta: ( image width+height+Bpp line_dims colour -- image width+height+Bpp line_dims colour )
+# line_dims:i32 X_start + Y_start + X_end + Y_end
+:line, i32; opens
+	# draw a line from A to B
+	# A + i*(B-A)/p where p = max(B-A) and i = from 0 to P
+	# A parameterised function, effectively
+	def Img       = -4$
+	def Img_dims  = -3$
+	def Line_dims = -2$
+	def Colour    = -1$
+	enum:u32 X_start Y_start X_end Y_end = Line_dims
+	enum:u32 I   P   X_i Y_i X_screen  Y_screen = 0$
+	push     0 + 0 + 0 + 0 + 0       + 0
+
+	mul Img_dims.Width, Img_dims.Width, Img_dims.Bpp
+
+	sub X_end, X_end, X_start
+	sub Y_end, Y_end, Y_start
+
+	cmp X_end, 0
+		Cs mul X_i, X_end, -1; Cge set X_i, X_end
+	cmp Y_end, 0
+		Cs mul Y_i, Y_end, -1; Cge set Y_i, Y_end
+	cmp X_i, Y_i
+		Cs set P, Y_end; Cge set P, X_end
+	cmp P, 0
+		Ce set P, 1
+
+	:line_loop, i32
+		mul X_i, X_end, I
+		div X_i, X_i, P
+		add X_i, X_i, X_start
+
+		mul Y_i, Y_end, I
+		div Y_i, Y_i, P
+		add Y_i, Y_i, Y_start
+
+		mul Y_screen, Img_dims.Width, Y_i
+		mul X_screen, X_i, Img_dims.Bpp
+		ex Y_screen Img[~]* X_screen Img<~>*
+		memv Img, Colour, Colour.o, Img_dims.Bpp
+
+		cmp P, 0
+			Cg inc I; Cs dec I
+		cmp I, P
+			Cn jmp line_loop
+
+	ex Img[0]*
+	div Img_dims.Width, Img_dims.Width, Img_dims.Bpp
+	free 1
+ret;clons
+
+################################################################ triangle
+# sta: ( Img Img_dims Tri Colour -- Image width+height+Bpp Tri Colour )
+# line_dims:i32 X_1 + Y_1 + X_2 + Y_2 + X_3 + Y_3
+# :triangle, i32;
+	# opens
+	# def Img = -4$
+	# def Img_dims = -3$
+	# def Tri = -2$
+	# def Colour = -1$
+	# enum:i32 X_1 Y_1 X_2 Y_2 X_3 Y_3 = Tri
+# 
+	# cmp Y_1, Y_2
+		# Cs jmp triangle_smol_a
+		# Cg jmp triangle_grot_a
+		# Ce jmp triangle_equa_a
+		# :triangle_cmp_a, i32
+# ret
+	# :triangle_smol_a, i32
+		# set X_A, X_1
+		# set Y_A, Y_1
+	# jmp triangle_cmp_a
+	# :triangle_grot_a, i32
+		# set X_A, X_2
+		# set Y_A, Y_2
+	# jmp triangle_cmp_a
+	# :triangle_equa_a, i32
+		# cmp X_1, X_2
+		# Cse jmp triangle_smol_a
+		# Cg jmp triangle_grot_a
+	# jmp triangle_cmp_a
+# clons
+
+################################################################ rectangle
+# sta: ( image width+height+Bpp rectdims colour -- image width+height+Bpp )
+# rectinfo:u32 Xoffset + Yoffset + Xsize + Ysize
+:rect, u32; opens
+	def Data   = -4$
+	def Mdata  = -3$
+	def Goals  = -2$
+	def Colour = -1$
+	enum:u32 Xoffset Yoffset Xsize Ysize = Goals
+	alloc 1; rsz 0$, 4t
+	enum:u32 Xgoal Ygoal Increment Prog = 0$
+
+	# temporatily making this width the width in bytes
+	mul Mdata.Width, Mdata.Width, Mdata.Bpp
+
+	u32
+	# X limit goal calculation
+	add Xgoal, Xoffset, Xsize
+	mul Xgoal, Xgoal, Mdata.Bpp
+	# calculation of the part it has to skip when it's done with a row
+	mul Increment, Xsize, Mdata.Bpp
+	sub Increment, Mdata.Width, Increment
+	add Ygoal, Yoffset, Ysize
+	# 
+	mul Prog, Mdata.Width, Yoffset
+	ex Prog Data ~]*
+	mul Prog, Xoffset, Mdata.Bpp
+	add Prog, Prog, Data.o
+	ex Prog Data ~]*
+
+	:rect_loop, u32
+			memv Data, Colour, 0, Mdata.Bpp # Data.o has to start at 3*Offsetx + Width*3*Offsety
+			ex Mdata.Bpp Data ~>*
+			mod Prog, Data.o, Mdata.Width # Width has to be multiplied by 3 actually
+			cmp Prog, Xgoal # Xgoal has to be 3*(Offsetx + Sizex)
+			Cs jmp rect_loop
+		add Prog, Data.o, Increment #Increment has to be 3*(Width - Sizex)
+		ex Prog Data ~]*
+		div Prog, Data.o, Mdata.Width # Width has to be multiplied by 3 actually
+		cmp Prog, Ygoal # Ygoal has to be Offsety + Sizey
+		Cs jmp rect_loop
+
+	div Mdata.Width, Mdata.Width, Mdata.Bpp
+	free 3
+	ex 1@[0]*
+ret; clons
+
+clons
+:IMGS_END

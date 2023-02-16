@@ -490,7 +490,8 @@ ptr_t buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 				dummy = opEntry;
 				section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
 				(*section.u16)++;
-				if(!(kinds[0]=='d' || kinds[1]=='p' || kinds[0]=='D' || kinds[1]=='P')){
+//				printf("kindsprev: %c, %c\n", kinds[0], kinds[1]);
+				if( (kinds[0]!='d' && kinds[0]!='D') || (kinds[1]!='p' && kinds[1]!='P') ){
 					error("\aOperator ']' expects a page and a datum (in that order)", *readhead, sourcefile);
 					goto endonerror;
 				}
@@ -502,7 +503,7 @@ ptr_t buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 				dummy = opRef;
 				section.chr = arrapp(section.chr, *section.u16, &dummy, 1);
 				(*section.u16)++;
-				if(!(kinds[0]=='d' || kinds[1]=='p' || kinds[0]=='D' || kinds[1]=='P')){
+				if( (kinds[0]!='d' && kinds[0]!='D') || (kinds[1]!='p' && kinds[1]!='P') ){
 					error("\aOperator '>' expects a page and a datum (in that order)", *readhead, sourcefile);
 					goto endonerror;
 				}

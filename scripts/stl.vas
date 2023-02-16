@@ -1,38 +1,113 @@
-call fload
-	Cn jmp END
-def File = 0$
-def Normal = 0 # 4 8
-def V1 = 12 # 16 20
-def V2 = 24 # 28 32
-def V3 = 36 # 40 44
-def Attr = 48
-chr print "Amount of triangles: ", 1
-u32 dprint File[80], 0
-ex File[84]*
-dprint File.o, 0
+# stl's kek
 
-chr print "Normal:", 0
-alloc 1; rsz 1$, 12
-f32 memv 1$, File, File.o, 3t
-print 1$, 0
-free 1
+jmp STL_END
 
-chr print "Vertices:", 0
-call getf64vertices
-f64
-print 1$, 0
-print 2$, 0
-print 3$, 0
-chr print "Attribute:", 0
-u16 dprint File<Attr>, 0
-
-chr print "Calculated Normal:", 0
-call f64trianormal
-f64 print 0@, 0
-
-jmp END
-
-insert stdlib.vas
 insert 3Df64vec.vas
 
-:END
+opens
+
+# sta:( stl_name -- tri[] stl_name )
+:stl_read, u8; opens
+	alloc 1 # checking if there are enough arguments
+	i64 staptr 0$!
+	scmp 0$!, 1; chr
+		Cs jmp stl_read_notenough
+
+	u64 push 0 + 0
+	alloc 1;
+	def Name = -1$
+	def File = 0$
+	enum:u64 Error Triangle_amount = 1$
+	def Tri = 2$
+	u64
+	flen File!, Name, Error
+		ecmp Error, 0
+		Cn jmp stl_read_nofile
+	fread File, Name, 0, Error
+
+	u32 mul Triangle_amount, File[80], Tri_size
+	rsz Tri, Triangle_amount
+	ex File[84]*
+	:stl_read_loop, f32
+		ex File<12>* # skip normal
+		cast Tri.X_1, File<0>, F64
+		cast Tri.Y_1, File<4>, F64
+		cast Tri.Z_1, File<8>, F64
+
+		cast Tri.X_2, File<12>, F64
+		cast Tri.Y_2, File<16>, F64
+		cast Tri.Z_2, File<20>, F64
+
+		cast Tri.X_3, File<24>, F64
+		cast Tri.Y_3, File<28>, F64
+		cast Tri.Z_3, File<32>, F64
+#		call tri_print
+		u64 ex File<38>* Tri<Tri_size>*
+		cmp File.o, 80
+			Cg jmp stl_read_loop
+
+	ex Tri[0]*
+	push Name
+	flip 2; free 3; unf 2
+	cmp 1, 1
+ret
+	:stl_read_notenough, chr
+		print "stl_read: not enough data.", 0
+		free 1
+		cmp 0, 1
+	ret
+	:stl_read_nofile, chr
+		print "stl_read: file '", 1
+		print Name, 1
+		print "' can not be opened.", 0
+		free 3
+		cmp 0, 1
+	ret
+clons
+
+# sta:( tri[] stl_name -- stl_name )
+:stl_write, f64
+ret
+
+# sta:( stl tri[] -- stl tri[] )
+:stl_get_tri, f64; opens
+	def Stl = -2$
+	def Tri = -1$
+	f32
+	ex Stl<12>* # skip normal
+	cast Tri.X_1, Stl<0>, F64
+	cast Tri.Y_1, Stl<4>, F64
+	cast Tri.Z_1, Stl<8>, F64
+
+	cast Tri.X_2, Stl<12>, F64
+	cast Tri.Y_2, Stl<16>, F64
+	cast Tri.Z_2, Stl<20>, F64
+
+	cast Tri.X_3, Stl<24>, F64
+	cast Tri.Y_3, Stl<28>, F64
+	cast Tri.Z_3, Stl<32>, F64
+	ex Stl<-12>* # return to beginning of stl triangle
+ret; clons
+
+# sta:( stl tri[] -- stl tri[] )
+:stl_set_tri, f64; opens
+	def Stl = -2$
+	def Tri = -1$
+	ex Stl<12>* # skip normal
+	cast Stl<0>, Tri.X_1, F32
+	cast Stl<4>, Tri.Y_1, F32
+	cast Stl<8>, Tri.Z_1, F32
+
+	cast Stl<12>, Tri.X_2, F32
+	cast Stl<16>, Tri.Y_2, F32
+	cast Stl<20>, Tri.Z_2, F32
+
+	cast Stl<24>, Tri.X_3, F32
+	cast Stl<28>, Tri.Y_3, F32
+	cast Stl<32>, Tri.Z_3, F32
+	ex Stl<-12>* # return to beginning of stl triangle
+ret; clons
+
+clons
+
+:STL_END

@@ -5,7 +5,20 @@ jmp 3DF64VEC_END
 def X = 0 # 0
 def Y = 8 # 1t
 def Z = 16 # 2t
+
+# this is for triangles
+enum:f64 X_1 Y_1 Z_1  X_2 Y_2 Z_2  X_3 Y_3 Z_3 = <
+def Tri_size = 72
+def Vec_size = 24
+def Tri_empty = 0+0+0 + 0+0+0 + 0+0+0
+def Vec_empty = 0+0+0
+
+insert math.vas
+
 opens
+
+def F64 = 10
+def F32 = 9
 
 # sta:( 4x4f64matr 4x4f64matr -- 4x4f64matr)
 :4x4f64matrmul, f64
@@ -15,22 +28,110 @@ opens
 	# [ MA02 MA12 MA22 MAtz ]     [ MB02 MB12 MB22 MBtz ] 
 	# [  0    0    0    1   ]]    [  0    0    0    1   ]]
 	chr print "4x4f64matrmul: TO BE IMPLEMENTED", 0
-	jmp END
+	jmp 3DF64VEC_END
 ret
 
-# sta:( 4x4f64matr 3Df64vec -- 4x4f64matr transformed3Df64vec )
-:transf64orm, f64
+# sta:( 4x4mat 4vec_with_angle_as_frac -- 4x4mat 4vec_with_angle )
+:x_rotmat, f64; opens
+	def Mat = -2$
+	def Vec = -1$
+	enum:f64 Angle Denom Pi Do = Vec<
+	enum:f64 M00 M10 M20 Mtx    M01 M11 M21 Mty    M02 M12 M22 Mtz = Mat<
+	#[[ 1   0       0    0 ]
+	# [ 0 cos(a) -sin(a) 0 ]
+	# [ 0 sin(a)  cos(a) 0 ]
+	# [ 0   0       0    1 ]]
+	cmp Do, 0
+		Ce jmp x_rotmat_dontdo
+		cmp Pi, 0
+			Cn lib Pi_f64, Pi
+		div Angle, Angle, Denom
+			Cn mul Angle, Angle, Pi
+		set Do, 0
+	:x_rotmat_dontdo, f64
+	memv Mat,       1 + 0 + 0 + 0, 0, 4t
+	memv Mat<4t>*~, 0 + 0 + 0 + 0, 0, 4t
+	memv Mat<4t>*~, 0 + 0 + 0 + 0, 0, 4t
+	memv Mat<4t>*~, 0 + 0 + 0 + 1, 0, 4t
+	ex Mat<-12t>*
+	lib Cos_f64, M11, Angle
+	lib Sin_f64, M12, Angle
+	mul M21, M12, -1
+	set M22, M11
+ret; clons
+
+# sta:( 4x4mat 4vec_with_angle_as_frac -- 4x4mat 4vec_with_angle )
+:y_rotmat, f64; opens
+	def Mat = -2$
+	def Vec = -1$
+	enum:f64 Angle Denom Pi Do = Vec<
+	enum:f64 M00 M10 M20 Mtx    M01 M11 M21 Mty    M02 M12 M22 Mtz = Mat<
+	#[[ cos(a)  0 sin(a) 0 ]
+	# [ 0       1   0    0 ]
+	# [ -sin(a) 0 cos(a) 0 ]
+	# [ 0       0   0    1 ]]
+	cmp Do, 0
+		Ce jmp y_rotmat_dontdo
+		cmp Pi, 0
+			Cn lib Pi_f64, Pi
+		div Angle, Angle, Denom
+			Cn mul Angle, Angle, Pi
+		set Do, 0
+	:y_rotmat_dontdo, f64
+	memv Mat,       0 + 0 + 0 + 0, 0, 4t
+	memv Mat<4t>*~, 0 + 1 + 0 + 0, 0, 4t
+	memv Mat<4t>*~, 0 + 0 + 0 + 0, 0, 4t
+	memv Mat<4t>*~, 0 + 0 + 0 + 1, 0, 4t
+	ex Mat<-12t>*
+	lib Cos_f64, M00, Angle
+	lib Sin_f64, M20, Angle
+	mul M02, M20, -1
+	set M22, M00
+ret; clons
+
+# sta:( 4x4mat 4vec_with_angle_as_frac -- 4x4mat 4vec_with_angle )
+:z_rotmat, f64; opens
+	def Mat = -2$
+	def Vec = -1$
+	enum:f64 Angle Denom Pi Do = Vec<
+	enum:f64 M00 M10 M20 Mtx    M01 M11 M21 Mty    M02 M12 M22 Mtz = Mat<
+	#[[ cos(a) -sin(a) 0  0 ]
+	# [ sin(a)  cos(a) 0  0 ]
+	# [   0       0    1  0 ]
+	# [   0       0    0  1 ]]
+	cmp Do, 0
+		Ce jmp z_rotmat_dontdo
+		cmp Pi, 0
+			Cn lib Pi_f64, Pi
+		div Angle, Angle, Denom
+			Cn mul Angle, Angle, Pi
+		set Do, 0
+	:z_rotmat_dontdo, f64
+	memv Mat,       0 + 0 + 0 + 0, 0, 4t
+	memv Mat<4t>*~, 0 + 0 + 0 + 0, 0, 4t
+	memv Mat<4t>*~, 0 + 0 + 1 + 0, 0, 4t
+	memv Mat<4t>*~, 0 + 0 + 0 + 1, 0, 4t
+	ex Mat<-12t>*
+	lib Cos_f64, M00, Angle
+	lib Sin_f64, M01, Angle
+	mul M10, M01, -1
+	set M11, M00
+ret; clons
+
+# sta:( vec[] 4x4matr 4vec -- vec[] 4x4matr transformed4vec )
+:transform, f64; opens
+	def Trav = -3$
 	def TraM = -2$
 	def Tres = -1$
-	def Trav =  0$
 	enum:f64 M00 M10 M20 Mtx    M01 M11 M21 Mty    M02 M12 M22 Mtz = TraM<
 	#[[ M00 M10 M20 Mtx ]    [ X ]   [ M00*X + M10*Y + M20*Z + Mtx ]
 	# [ M01 M11 M21 Mty ]  . [ Y ] = [ M01*X + M11*Y + M21*Z + Mty ]
 	# [ M02 M12 M22 Mtz ]    [ Z ]   [ M02*X + M12*Y + M22*Z + Mtz ]
 	# [  0   0   0   1  ]]   [ 1 ]   [               1             ]
-	push 0@
-	def TD = Trav<3t>
-	rsz 0@, 4t
+#	push 0+0+0+0
+#	rsz Tres, 4t
+	memv Tres, Trav, Trav.o, Vec_size
+	def TD = Tres<3t>
 	mul TD     , M00    , Trav<X>
 	mul Tres<X>, M10    , Trav<Y>
 	add Tres<X>, Tres<X>, TD
@@ -51,128 +152,150 @@ ret
 	mul TD     , M22    , Trav<Z>
 	add TD     , TD     , Mtz
 	add Tres<Z>, Tres<Z>, TD
+#	rsz 0@, 3t
+ret; clons
+
+# sta:( triangle[] -- triangle[] normal_vec)
+# 3 - 2 x 1 - 3
+:tri_normal, f64; opens
+	def Tri = -1$
+	def V3_V2 = 0$
+	def V1_V3 = 1$
+	def A = V3_V2
+	def B = V1_V3
+	push 0+0+0
+	push 0+0+0
+
+	sub V3_V2[X], Tri.X_3, Tri.X_2
+	sub V3_V2[Y], Tri.Y_3, Tri.Y_2
+	sub V3_V2[Z], Tri.Z_3, Tri.Z_2
+
+	sub V1_V3[X], Tri.X_1, Tri.X_3
+	sub V1_V3[Y], Tri.Y_1, Tri.Y_3
+	sub V1_V3[Z], Tri.Z_1, Tri.Z_3
+	#sta:( tri[] ' V3-V2  V1-V3 )
+
+	call vec_cross
+	#sta:( tri[] ' vec  V3-V2xV1-V3 )
+	f64 memv A, B, 0, Vec_size
+
+	call vec_mag #sta:( cross cross -- cross vec_w_mag )
+	f64
+	div A[X], A[X], B[X]
+	div A[Y], A[Y], B[X]
+	div A[Z], A[Z], B[X]
 	free 1
-ret
+ret; clons
 
-# sta:( 3Df64vec1 3Df64vec2 3Df64vec3 -- normal)
-:f64trianormal, f64
-	def Vert1 = -3$
-	def Vert2 = -2$
-	def Vert3 = -1$
-	push Vert3
-	push Vert2
-	call sub3Df64vec
+# sta:( vec1[] vec2 -- vec1[] vec_with_vec1.vec2 )
+:vec_dot, f64; opens
+	def V = -2$
+	def U = -1$
+	mul U<X>, U<X>, V<X>  # x1*x2
+	mul U<Y>, U<Y>, V<Y>  # y1*y2
+	mul U<Z>, U<Z>, V<Z>  # z1*z2
+	add U<Y>, U<Y>, U<Z>  # y + z
+	add U<X>, U<X>, U<Y>  # x + ...
+ret;clons
 
-	push Vert1
-	push Vert3
-	call sub3Df64vec
-
-	call cross3Df64vec
-	push 0@
-	call len3Df64vec
-	call sdiv3Df64vec
-ret
-
-# sta:( 3Df64vec1 3Df64vec2 -- 3Df64vec2 )
-:cross3Df64vec, f64; opens
-	# [ X1 ]   [ X2 ]   [ Y1*Z2 - Z1*Y2 ]
-	# [ Y1 ] x [ Y2 ] = [ Z1*X2 - X1*Z2 ]
-	# [ Z1 ]   [ Z2 ]   [ X1*Y2 - Y1*X2 ]
-	alloc 1
-	def V1 = -2$
-	def V2 = -1$
+# sta:( vec1[] vec2 -- vec1[] vec1xvec2 )
+:vec_cross, f64; opens
+	# [ V.X ]   [ U.X ]   [ V.Y*U.Z - V.Z*U.Y ]
+	# [ V.Y ] x [ U.Y ] = [ V.Z*U.X - V.X*U.Z ]
+	# [ V.Z ]   [ U.Z ]   [ V.X*U.Y - V.Y*U.X ]
+	def V = -2$
+	def U = -1$
 	def Res = 0$
 	def D = 24
-	rsz Res, 4t
+	push 0 + 0 + 0 + 0
 
-	mul Res<X>, V1<Y> , V2<Z>
-	mul Res<D>, V1<Z> , V2<Y> 
+	mul Res<X>, V<Y> , U<Z>
+	mul Res<D>, V<Z> , U<Y> 
 	#-------------------------
 	sub Res<X>, Res<X>, Res<D>
 
-	mul Res<Y>, V1<Z> , V2<X>
-	mul Res<D>, V1<X> , V2<Z>
+	mul Res<Y>, V<Z> , U<X>
+	mul Res<D>, V<X> , U<Z>
 	#-------------------------
 	sub Res<Y>, Res<Y>, Res<D>
 
-	mul Res<Z>, V1<X> , V2<Y>
-	mul Res<D>, V1<Y> , V2<Z>
+	mul Res<Z>, V<X> , U<Y>
+	mul Res<D>, V<Y> , U<X>
 	#-------------------------
 	sub Res<Z>, Res<Z>, Res<D>
 
 	rsz Res, 3t
-	pop V1
-	free 1
+	pop U
 ret; clons
 
-# sta:( 3Df64vec nr -- 3Df64vec/nr )
-:sdiv3Df64vec, f64
-	div -2$<X>, -2$<X>, -1$!
-	div -2$<Y>, -2$<Y>, -1$!
-	div -2$<Z>, -2$<Z>, -1$!
-	free 1
+# sta:( vec[] vec_with_nr -- vec[] vec/nr )
+:vec_div, f64
+	div -1$[Y], -2$<Y>, -1$[X]
+	div -1$[Z], -2$<Z>, -1$[X]
+	div -1$[X], -2$<X>, -1$[X]
 ret
 
-# sta:( 3Df64vec1 3Df64vec2 -- 3Df64vec1-3Df64vec2 )
-:sub3Df64vec, f64
-	sub -2$<X>, -2$<X>, -1$<X>
-	sub -2$<Y>, -2$<Y>, -1$<Y>
-	sub -2$<Z>, -2$<Z>, -1$<Z>
-	free 1
+# sta:( vec1[] vec2 -- vec1[] vec1-vec2 )
+:vec_sub, f64
+	sub -1$[X], -2$<X>, -1$[X]
+	sub -1$[Y], -2$<Y>, -1$[Y]
+	sub -1$[Z], -2$<Z>, -1$[Z]
 ret
 
-# sta:( 3Df64vec -- length )
-:len3Df64vec, f64
-	mul -1$<X>, -1$<X>, -1$<X> # X^2
-	mul -1$<Y>, -1$<Y>, -1$<Y> # Y^2
-	mul -1$<Z>, -1$<Z>, -1$<Z> # Z^2
-	add -1$<X>, -1$<X>, -1$<Y> # X^2 + Y^2
-	add -1$<X>, -1$<X>, -1$<Z> # ... + Z^2
-	rsz -1$, 1t
-	call sqrtf64
+# sta:( vec1[] vec2 -- vec1[] vec1+vec2 )
+:vec_add, f64
+	add -1$[X], -2$<X>, -1$[X]
+	add -1$[Y], -2$<Y>, -1$[Y]
+	add -1$[Z], -2$<Z>, -1$[Z]
 ret
 
-# sta:( stl -- stl vertex1 vertex2 vertex3 )
-:getf64vertices, u8
-	alloc 3
-	f64 rsz 0$, 3t; rsz 1$, 3t; rsz 2$, 3t
-	f32 ex -1$<3t>* # skip normal
-	cast 0$!, -1$!, 10
-	cast 0$<8>, -1$<4>, 10
-	cast 0$<16>, -1$<8>, 10
-	ex -1$<3t>*
-	cast 1$!, -1$!, 10
-	cast 1$<8>, -1$<4>, 10
-	cast 1$<16>, -1$<8>, 10
-	ex -1$<3t>*
-	cast 2$!, -1$!, 10
-	cast 2$<8>, -1$<4>, 10
-	cast 2$<16>, -1$<8>, 10
-	ex -1$<-9t>* # return to beginning of triangle
-ret
+# sta:( vec[] vec -- vec[] vec_with_length )
+:vec_mag, f64; opens
+	enum:f64 Mag A B = -1$[
+	def Vec = -2$
+	mul Mag, Vec<X>, Vec<X> # X^2
+	mul A  , Vec<Y>, Vec<Y> # Y^2
+	mul B  , Vec<Z>, Vec<Z> # Z^2
+	add Mag, Mag, A # X^2 + Y^2
+	add Mag, Mag, B # ... + Z^2
+	lib Sqrt_f64, Mag, Mag
+ret; clons
 
-# sta:( stl vertex1 vertex2 vertex3 -- stl )
-:setf64vertices, f32
-	ex -4$<3t>* # skip normal
-	f64
-	cast -4$!, -3$!, 9
-	cast -4$<4>, -3<8>, 9
-	cast -4$<8>, -3<16>, 9
-	f32 ex -4$<3t>*
-	f64
-	cast -4$!, -2$!, 9
-	cast -4$<4>, -2<8>, 9
-	cast -4$<8>, -2<16>, 9
-	f32 ex -4$<3t>*
-	f64
-	cast -4$!, -1$!, 9
-	cast -4$<4>, -1<8>, 9
-	cast -4$<8>, -1<16>, 9
-	f32 ex -4$<3t>*
-	ex -4$<-9t>*
+# sta: ( tri[] -- tri[] )
+:tri_print, chr; opens
+	def Tri = -1$
+	print "(\n\t", 1
+		f64 dprint Tri.X_1, 1#"FFFFFFFF"!
+		chr print ", ", 1
+		f64 dprint Tri.Y_1, 1
+		chr print ", ", 1
+		f64 dprint Tri.Z_1, 1
+	chr print "\n\t", 1
+		f64 dprint Tri.X_2, 1
+		chr print ", ", 1
+		f64 dprint Tri.Y_2, 1
+		chr print ", ", 1
+		f64 dprint Tri.Z_2, 1
+	chr print "\n\t", 1
+		f64 dprint Tri.X_3, 1
+		chr print ", ", 1
+		f64 dprint Tri.Y_3, 1
+		chr print ", ", 1
+		f64 dprint Tri.Z_3, 1
+	chr print "\n)", 0
+ret; clons
+
+# sta: ( vec[] -- vec[] )
+:vec_print, chr
+	print "( ", 1
+	f64 dprint -1$<X>, 1
+	chr print ", ", 1
+	f64 dprint -1$<Y>, 1
+	chr print ", ", 1
+	f64 dprint -1$<Z>, 1
+	chr print " )", 0
 ret
 
 clons
-insert math.vas
 
 :3DF64VEC_END

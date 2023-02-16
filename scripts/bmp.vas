@@ -1,0 +1,189 @@
+# MAKE THIS NOTICE WHEN IT CAN'T READ A BMP
+
+#this library has a function for loading and saving microsoft bitmap images
+
+jmp BMP_END
+opens
+################################################################ loadbmp
+# sta: ( path -- imagedata width+height+3 path )
+:loadbmp, u8; opens
+#	chr print "loadbmp", 0
+	alloc 1 # checking if there is an argument
+	i64 staptr 0$!
+	scmp 0$!, 1; chr
+	free 1
+		Cs print "loadbmp: no file.", 0
+		Cs jmp loadbmp_error
+
+	######## setting up variables
+	u8 alloc 4
+	u32 rsz 1$, 3t
+	def Path = -1$
+	def Bdata = 0$
+	enum:u32 Width Height Bpp = 1$
+	def Header = 2$
+	def Err = 3$!
+
+	######## reading the file
+	u32 set Header!, 54
+	fread Header, Path, 0, Err
+		ecmp Err, 0
+		Cn jmp loadbmp_nofile
+#	chr print "Offset to imagedata: ", 1
+#	u32 dprint Header[10], 0
+
+	######## reading width and height
+	set Width, Header[18]
+	set Height, Header[22]
+	set Bpp, 3
+
+#	chr print "Width: ", 1; #u32 dprint Width, 0
+#	chr print "Height: ", 1;# u32 dprint Height, 0
+#	chr print "Size of imagedata: ", 1; #u32 dprint Header[34], 0
+
+	######## reading image data incl. buffers
+	u32 set Bdata!, Header[34]
+	fread Bdata, Path, Header[10], Err
+
+	######## setting up buffer relevant variables
+	u32
+	rsz 2$, 4t
+	enum:u32 Buffer Newdlen Rowsize Browsize = 2$
+	def Data = 3$
+
+	######## calculating buffer and deciding to remove it or not
+	mul Buffer, Width, 3; mod Buffer, Buffer, 4
+	sub Buffer, 4, Buffer; mod Buffer, Buffer, 4
+#	chr print "buffer: ", 1; #u32 dprint Buffer, 0
+	ecmp Buffer, 0
+		Ce jmp loadbmp_nobuffer
+
+	######## calculating and setting new length
+	mul Newdlen, Width, 3
+	mul Newdlen, Newdlen, Height
+	rsz Data, Newdlen
+#	chr print "new len: ", 1; #u32 dprint Newdlen, 0
+
+	######## removing the buffer
+	mul Rowsize, Width, 3
+	add Browsize, Rowsize, Buffer
+	ex Data[0]* Bdata[0]*
+	:loadbmp_debufloop, u32	
+		memv Data, Bdata, Bdata.o, Rowsize
+		ex (Rowsize Data ~>*) (Browsize Bdata ~>*)
+		ecmp Data.o, 0
+		Cn jmp loadbmp_debufloop
+
+	mov Bdata, Data
+
+	:loadbmp_nobuffer, u32
+
+	free 1
+	mov 2$, Path
+	flip 3
+	free 1
+	unf 3
+
+	cmp 1, 1
+ret
+	:loadbmp_error
+		cmp 0, 1
+	ret
+
+:loadbmp_nofile, chr
+	print "loadbmp: file '", 1
+	print Path, 1
+	print "' can not be opened.", 0
+	free 5
+	jmp loadbmp_error
+clons
+
+################################################################ savebmp
+# sta: ( imagedata width+height+3 path -- path )
+:savebmp, u8; opens
+#	chr print "Savebmp", 0
+	alloc 1 # checking if there are enough arguments
+	i64 staptr 0$!
+	scmp 0$!, 3; chr
+	free 1
+		Cs print "savebmp: not enough data.", 0
+		Cs jmp savebmp_end
+
+	######## setting up variables
+	u8 alloc 2
+	def Data = -3$
+	enum:u32 Width Height = -2$
+	def Path = -1$
+	def Newfile = 0$
+	u32 rsz 1$, 4t
+	def Bdata = 0$
+	enum:u32 Buffer Newdlen Rowsize Browsize = 1$
+
+	######## calculating buffer and deciding to remove it or not
+	u32
+	mul Buffer, Width, 3; mod Buffer, Buffer, 4
+	sub Buffer, 4, Buffer; mod Buffer, Buffer, 4
+#	chr print "buffer: ", 1; #u32 dprint Buffer, 0
+		ecmp Buffer, 0
+		Ce jmp savebmp_nobuffer
+
+	######## calculating and setting new length
+	#u32
+	mul Rowsize, Width, 3
+	add Browsize, Rowsize, Buffer
+	mul Newdlen, Browsize, Height
+#	chr print "new size of imagedata: ", 1; #u32 dprint Newdlen, 0
+	rsz Bdata, Newdlen
+	#u32 dprint Savebmp_bdata.l, 0
+
+	######## adding the buffer
+	ex Bdata[0]* Data[0]*
+	:savebmp_rebufloop, u32
+		memv Bdata, Data, Data.o, Rowsize
+		ex (Browsize Bdata ~>*) (Rowsize Data ~>*)
+		ecmp Data.o, 0
+		Cn jmp savebmp_rebufloop
+
+	mov Data, Bdata
+	fill Bdata, 0, 54
+
+	:savebmp_nobuffer, u32
+	######## setting length of new file
+	add Newfile!, Data.l, 54
+	rsz Newfile, Newfile!
+	######## magic number
+	set Newfile!, "BM"!; ex Newfile[2]*
+	######## filesize
+	set Newfile!, Newfile.l; ex Newfile<4>*
+	######## reserved spot in bmp
+	ex Newfile<4>*
+	######## header size and DIB header size
+	set Newfile!, 54; ex Newfile<4>*
+	set Newfile!, 40; ex Newfile<4>*
+	######## width and height
+	set Newfile!, Width;  ex Newfile<4>*
+	set Newfile!, Height; ex Newfile<4>*
+	######## planes and bits per pixel
+	u16 set Newfile!, 1;  ex Newfile<2>*
+	    set Newfile!, 24; ex Newfile<2>*; u32
+	######## compression
+	ex Newfile<4>*
+	######## imagedata size
+	set Newfile!, Data.l;
+	######## imagedata
+	ex Newfile[54]*
+	memv Newfile, Data, 0, Data.l
+	######## writing the file
+#	chr print "Writing to: ", 1;
+#	print Path, 0
+	u32 set 1$!, 0
+	fwrite Newfile, Path, 0, 1$!
+	########
+	free 2
+	flip 1
+	free 2
+	unf 1
+	:savebmp_end
+ret
+clons
+:BMP_END

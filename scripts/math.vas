@@ -1,12 +1,23 @@
 # THIS NEEDS MATH INSTALLED AS LIBRARY TO VANADIS, THIS IS JUST A WRAPPER
-jmp MATH_END
+# usage:
+# lib Binding_defined_in_this_file, Arguments
 
-:sqrtf32, f32
-	lib "sqrt", -1$!
-ret
+def Sqrt_f32 = 1
+def Sqrt_f64 = 2
+# Result, Argument
 
-:sqrtf64, f64
-	lib "sqrt", -1$!
-ret
+def Sin_f32 = 3
+def Sin_f64 = 4
+# Results, Argument
 
-:MATH_END
+def Cos_f32 = 5
+def Cos_f64 = 6
+# Results, Argument
+
+def Tan_f32 = 7
+def Tan_f64 = 8
+# Results, Argument
+
+def Pi_f32 = 9
+def Pi_f64 = 10
+# Results

@@ -359,12 +359,12 @@ bool evalexpr(char* exprpos, uint16_t exprlen, nry_t** args, ptr_t* nrs, nry_t* 
 				break;
 // sizeof
 			case opSizeof:
-				dummy = integer(regd[0], globalType);
+				dummy = sinteger(regd[0], globalType);
 				and ^= 1;
 				regd[0].u64 = &ALLd[argnr*2 + and];
-				*regd[0].u64 = dummy * typelen[globalType];
-				if(globalType == F32) *regd[0].f32 = (float) *regd[0].u64;
-				else if(globalType == F64) *regd[0].f64 = (double) *regd[0].u64;
+				*regd[0].i64 = dummy * typelen[globalType];
+				if(globalType == F32) *regd[0].f32 = (float) *regd[0].i64;
+				else if(globalType == F64) *regd[0].f64 = (double) *regd[0].i64;
 				regp[0] = NULL;
 				break;
 // swap
@@ -559,29 +559,44 @@ bool execute(char ins, nry_t** args, ptr_t* nrs){
 		} break;
 // mul
 		case mul: switch(globalType){
-			case Chr...U8: *nrs[0].u8 = *nrs[1].u8 * *nrs[2].u8; break;
-			case I16: case U16: *nrs[0].u16 = *nrs[1].u16 * *nrs[2].u16; break;
-			case I32: case U32: *nrs[0].u32 = *nrs[1].u32 * *nrs[2].u16; break;
-			case I64: case U64: *nrs[0].u64 = *nrs[1].u64 * *nrs[2].u64; break;
+			case Chr: *nrs[0].chr = *nrs[1].chr * *nrs[2].chr; break;
+			case I8:  *nrs[0].i8  = *nrs[1].i8  * *nrs[2].i8;  break;
+			case U8:  *nrs[0].u8  = *nrs[1].u8  * *nrs[2].u8;  break;
+			case I16: *nrs[0].i16 = *nrs[1].i16 * *nrs[2].i16; break;
+			case U16: *nrs[0].u16 = *nrs[1].u16 * *nrs[2].u16; break;
+			case I32: *nrs[0].i32 = *nrs[1].i32 * *nrs[2].i16; break;
+			case U32: *nrs[0].u32 = *nrs[1].u32 * *nrs[2].u16; break;
+			case I64: *nrs[0].i64 = *nrs[1].i64 * *nrs[2].i64; break;
+			case U64: *nrs[0].u64 = *nrs[1].u64 * *nrs[2].u64; break;
 			case F32: *nrs[0].f32 = *nrs[1].f32 * *nrs[2].f32; break;
 			case F64: *nrs[0].f64 = *nrs[1].f64 * *nrs[2].f64; break;
 		} break;
 // div
 		case divi: switch(globalType){
-			case Chr...U8: *nrs[0].u8 = *nrs[1].u8 / *nrs[2].u8; break;
-			case I16: case U16: *nrs[0].u16 = *nrs[1].u16 / *nrs[2].u16; break;
-			case I32: case U32: *nrs[0].u32 = *nrs[1].u32 / *nrs[2].u32; break;
-			case I64: case U64: *nrs[0].u64 = *nrs[1].u64 / *nrs[2].u64; break;
+			case Chr: *nrs[0].chr = *nrs[1].chr / *nrs[2].chr; break;
+			case I8:  *nrs[0].i8  = *nrs[1].i8  / *nrs[2].i8;  break;
+			case U8:  *nrs[0].u8  = *nrs[1].u8  / *nrs[2].u8;  break;
+			case I16: *nrs[0].i16 = *nrs[1].i16 / *nrs[2].i16; break;
+			case U16: *nrs[0].u16 = *nrs[1].u16 / *nrs[2].u16; break;
+			case I32: *nrs[0].i32 = *nrs[1].i32 / *nrs[2].i16; break;
+			case U32: *nrs[0].u32 = *nrs[1].u32 / *nrs[2].u16; break;
+			case I64: *nrs[0].i64 = *nrs[1].i64 / *nrs[2].i64; break;
+			case U64: *nrs[0].u64 = *nrs[1].u64 / *nrs[2].u64; break;
 			case F32: *nrs[0].f32 = *nrs[1].f32 / *nrs[2].f32; break;
 			case F64: *nrs[0].f64 = *nrs[1].f64 / *nrs[2].f64; break;
 		} break;
 // mod
 		case modu: switch(globalType){
-			case Chr...U8: *nrs[0].u8 = *nrs[1].u8 % *nrs[2].u8; break;
-			case I16: case U16: *nrs[0].u16 = *nrs[1].u16 % *nrs[2].u16; break;
-			case I32: case U32: *nrs[0].u32 = *nrs[1].u32 % *nrs[2].u32; break;
-			case I64: case U64: *nrs[0].u64 = *nrs[1].u64 % *nrs[2].u64; break;
-			case F32: *nrs[0].f32 = fmod(*nrs[1].f32, *nrs[2].f32); break;
+			case Chr: *nrs[0].chr = *nrs[1].chr % *nrs[2].chr; break;
+			case I8:  *nrs[0].i8  = *nrs[1].i8  % *nrs[2].i8;  break;
+			case U8:  *nrs[0].u8  = *nrs[1].u8  % *nrs[2].u8;  break;
+			case I16: *nrs[0].i16 = *nrs[1].i16 % *nrs[2].i16; break;
+			case U16: *nrs[0].u16 = *nrs[1].u16 % *nrs[2].u16; break;
+			case I32: *nrs[0].i32 = *nrs[1].i32 % *nrs[2].i16; break;
+			case U32: *nrs[0].u32 = *nrs[1].u32 % *nrs[2].u16; break;
+			case I64: *nrs[0].i64 = *nrs[1].i64 % *nrs[2].i64; break;
+			case U64: *nrs[0].u64 = *nrs[1].u64 % *nrs[2].u64; break;
+			case F32: *nrs[0].f32 = fmodf(*nrs[1].f32, *nrs[2].f32); break;
 			case F64: *nrs[0].f64 = fmod(*nrs[1].f64, *nrs[2].f64); break;
 		} break;
 
@@ -726,10 +741,15 @@ bool execute(char ins, nry_t** args, ptr_t* nrs){
 // cmp
 		case cmp: if(globalType < F32){
 			switch(globalType){
-				case Chr...U8: dummy = *nrs[0].u8; silly = *nrs[1].u8; break;
-				case I16: case U16: dummy = *nrs[0].u16; silly = *nrs[1].u16; break;
-				case I32: case U32: dummy = *nrs[0].u32; silly = *nrs[1].u32; break;
-				case I64: case U64: dummy = *nrs[0].u64; silly = *nrs[1].u64; break;
+				case Chr: dummy = *nrs[0].chr; silly = *nrs[1].chr; break;
+				case I8:  dummy = *nrs[0].i8;  silly = *nrs[1].i8;  break;
+				case U8:  dummy = *nrs[0].u8;  silly = *nrs[1].u8;  break;
+				case I16: dummy = *nrs[0].i16; silly = *nrs[1].i16; break;
+				case U16: dummy = *nrs[0].u16; silly = *nrs[1].u16; break;
+				case I32: dummy = *nrs[0].i32; silly = *nrs[1].i32; break;
+				case U32: dummy = *nrs[0].u32; silly = *nrs[1].u32; break;
+				case I64: dummy = *nrs[0].i64; silly = *nrs[1].i64; break;
+				case U64: dummy = *nrs[0].u64; silly = *nrs[1].u64; break;
 			}
 			if(globalType % 2 == 0){
 //				printf("%lu, %lu\n", dummy, silly);
@@ -788,10 +808,10 @@ bool execute(char ins, nry_t** args, ptr_t* nrs){
 				case U64: printf("%lu",*nrs[0].u64); break;
 				case F32: printf("%f", *nrs[0].f32); break;
 				case F64: printf("%lf",*nrs[0].f64); break;
-			} if(*nrs[1].u8 == 0) printf("\n");
+			} if(integer(nrs[1], globalType) == 0) printf("\n");
 			break;
 // print
-		case print: aprintnry(args[0], globalType, *nrs[1].u8 == 0); break;
+		case print: aprintnry(args[0], globalType, integer(nrs[1], globalType) == 0); break;
 
 // lib
 		case lib:
@@ -877,10 +897,10 @@ bool run(file_t* runfile){
 			globalType = head;
 		} else switch(head){
 			case Ce: if(!flag.c.e) goto skip;;break;
-			case Cs: if(!flag.c.s) goto skip; break;
-			case Cg: if(!flag.c.g) goto skip; break;
 			case Cse:if(!(flag.c.s || flag.c.e)) goto skip; break;
 			case Cge:if(!(flag.c.g || flag.c.e)) goto skip; break;
+			case Cs: if(!flag.c.s) goto skip; break;
+			case Cg: if(!flag.c.g) goto skip; break;
 			case Cn: if(flag.c.e) goto skip; break;
 				skip: if(runfile->pos < runfile->len){
 					head = runfile->mfp[runfile->pos]/2;
