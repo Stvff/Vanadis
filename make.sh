@@ -1,6 +1,6 @@
 set -e
 
-out=nvic
+out=vic
 CC=gcc
 
 if [[ $1 == help ]]; then

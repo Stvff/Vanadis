@@ -16,8 +16,8 @@ union {
 } sta;
 
 int main(int argc, char** argv){
-	file_t sourcefile = {0};
-	file_t runfile = {0};
+	file_t sourcefile = {0, 0, NULL};
+	file_t runfile = {0, 0, NULL};
 	nry_t stackarg = {(ptr_t)NULL, 0, (ptr_t)NULL};
 	int sourcenr = 0;
 	int binaryoutnr = 0;
