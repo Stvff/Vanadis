@@ -37,8 +37,8 @@ int64_t codexPtr;
 int64_t stackFrameOffset;
 
 time_t thetime;
-char* UserInput;
-int userInputLen = STANDARDuserInputLen;
+//char* UserInput;
+//int userInputLen = STANDARDuserInputLen;
 uint64_t dummy;
 uint64_t silly;
 uint64_t giddy;
@@ -249,7 +249,7 @@ bool evalexpr(char* exprpos, uint16_t exprlen, nry_t** args, ptr_t* nrs, nry_t* 
 		val = *(expr.u8 + readhead);
 		if(debugExpr){
 			printf("p: %p, %p\nd: %p, %p\n", regp[0], regp[1], regd[0].p, regd[1].p);
-			printf("I %x: %c, readhead: %d\n", val, operationString[val], readhead);
+			printf("I %x: %s, readhead: %d\n", val, operationString[val], readhead);
 			if(debugEnters) ret = breakpoint(regp, regd);
 		}
 		switch(val){

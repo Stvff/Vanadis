@@ -6,16 +6,21 @@
 #include <string.h>
 #include <stdint.h>
 
-bool EndLine(char* entry){
-	return *entry == '\n' || *entry == '\r' || *entry == '\0' || *entry == ';' || *entry == ':' || *entry == '#';
+bool EndLine(char entry){
+	return entry == '\n' || entry == '\r' || entry == '\0' || entry == ';' || entry == ':' || entry == '#';
 }
 
-bool IsNr(char* entry){
-	return (*entry >= '0' && *entry <= '9') || *entry == '-';
+bool IsNr(char entry){
+	return (entry >= '0' && entry <= '9') || entry == '-';
 }
 
-bool IsAlph(char* entry){
-	return (*entry >= 'a' && *entry <= 'z') || (*entry >= 'A' && *entry <= 'Z');
+bool IsAlph(char entry){
+	return (entry >= 'a' && entry <= 'z') || (entry >= 'A' && entry <= 'Z');
+}
+
+bool IsPage(char entry){
+	return (entry >= '0' && entry <= '9') || entry == '-' || entry == '+'
+		|| entry == '\'' || entry == '.' || entry == '"';
 }
 
 bool IsSpace(char* entry){
@@ -28,11 +33,24 @@ size_t delimstrlen(char* str, char chra){
 	return i;
 }
 
-char SkipSpaces(char* str, int len, int* i){
+char SkipSpaces(char* str, size_t len, size_t* i){
 	str += *i;
-	while((*str == ' ' || *str == '\t') && *i < len){
+	while(*i < len && (*str == ' ' || *str == '\t')){
 		str++;
 		(*i)++;
+	}
+	return *str;
+}
+
+char SkipString(char* str, int len, int* i){
+	str += *i;
+	char esc = 1;
+	printf("len: %d\n", len);
+	while(*i < len && (*str != '"' || esc)){
+		esc = *str != '\\' && !esc;
+		str++;
+		(*i)++;
+		printf("i: %d, chr: %c\n", *i, *str);
 	}
 	return *str;
 }
@@ -43,6 +61,12 @@ typedef struct FILEstuff {
 	size_t pos;
 	char* mfp;
 //	struct FILEstuff* prevfile;
+	size_t strlen;
+	size_t strbuf;
+	size_t strpos;
+	char* str;
+
+	char* name;
 } file_t;
 
 char* mfgets(char* string, int size, file_t* file){
@@ -71,12 +95,43 @@ char* mfgetsS(char* string, int size, file_t* file){
 	return retptr;
 }
 
+char* mfgetsSu(file_t* file){
+	if(file->len == file->pos) return NULL;
+
+	size_t len = file->pos; {
+		bool inside = false;
+		bool escaped = false;
+		while(1){
+			if(len >= file->len || file->mfp[len] == '\n' || file->mfp[len] == '\r') break;
+			escaped = inside && !escaped && file->mfp[len] == '\\';
+			inside = (!escaped && file->mfp[len] == '"') ^ !inside;
+			if(!inside && (file->mfp[len-1] == '#' || file->mfp[len-1] == ';')) break;
+			len++;
+		} len++;
+	}
+
+	//TODOFIXME: handle updating file->pos and pure comments
+
+	len -= file->pos;
+	if(len > file->strbuf){
+		file->str = realloc(file->str, len + 1);
+		file->strbuf = len + 1;
+	}
+	memcpy(file->str, file->mfp + file->pos, len);
+	file->str[len] = '\0';
+	file->strlen = len;
+	file->strpos = 0;
+	return file->str;
+}
+
 file_t* mfopen(char* path, file_t* file){
 	FILE* fp = fopen(path, "r");
 	if(fp == NULL){
 		fprintf(stderr, "\aVanadis: \033[91mCould not open file '%s'.\033[0m\n", path);
 		return NULL;
 	}
+	file->name = malloc(strlen(path) + 1);
+	strcpy(file->name, path);
 
 	fseek(fp, 0, SEEK_END);
 	file->len = ftell(fp);
@@ -87,14 +142,27 @@ file_t* mfopen(char* path, file_t* file){
 	file->pos = 0;
 
 	fclose(fp);
+
+	file->strlen = 0;
+	file->strbuf = 0;
+	file->strpos = 0;
+	file->str = NULL;
 	return file;
 }
 
 void mfclose(file_t* file){
-	if(file->mfp == NULL) return;
-	free(file->mfp); file->mfp = NULL;
+	free(file->mfp);
+	file->mfp = NULL;
 	file->pos = 0;
 	file->len = 0;
+
+	free(file->str);
+	file->str = NULL;
+	file->strlen = 0;
+	file->strbuf = 0;
+	file->strpos = 0;
+
+	free(file->name);
 }
 
 file_t* mfapp(file_t* file, char* src, size_t len){

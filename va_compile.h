@@ -171,6 +171,7 @@ memowy_t* letbind(file_t* file, int i, memowy_t* binds){
 
 /*	It would be proper to check if there are undefined bindings being used here.*/
 /*	Then again, this way you can do def A = B[4]; def B = 2$; So that's worth something, I guess.*/
+/*	At the same time, you can also do def A = A; or def A = B; def B = A;  which makes for a bad time. */
 	return binds;
 }
 
@@ -417,7 +418,193 @@ char* arrapp(char* des, uint64_t deslen, void* src, uint64_t srclen){
 
 //##################################################################################### building, compiling
 
+char regkinds[argumentAmount+1] = "____";
+
+unsigned char whichsymbol(char chr, char* symbollist){
+	unsigned char symbolnr;
+	for(symbolnr = 0; symbollist[symbolnr] != 0; symbolnr++){
+		if(symbollist[symbolnr] != chr) continue;
+		return symbolnr;
+	}
+	if(IsPage(chr)) return opsy_Page;
+	return symbolnr;
+}
+
+enum kindsenum {
+	KIND_DATUM = 1,
+	KIND_KNOWN = 2,
+	KIND_MUTBL = 4,
+	KIND_NOTHING = 8
+};
+
+typedef union {
+	uint8_t all;
+	struct {
+		bool datum:1;
+		bool known:1;
+		bool mutbl:1;
+		bool nothing:1;
+	} sp;
+} kind_t;
+
+typedef struct {
+	uint8_t whatop;
+	kind_t kind;
+	uint8_t op;
+	int sourceposition;
+	union {
+		char chr;
+		int64_t i64;
+		uint64_t u64;
+		float f32;
+		double f64;
+		char* nry;
+	} val;
+} token_t;
+
+typedef struct {
+	size_t len;
+	memowy_t pages;
+	token_t* tokens;
+} expr_t;
+
+ptr_t betterbuildargs(int* readhead, file_t* sourcefile, memowy_t* bindings){
+	expr_t expr = {0, {0}, NULL};
+
+	if(debugCompile){
+		printf("about to better compile: '%s'\n", UserInput);
+	}
+	/* de-macro-ify */
+	for(int i = *readhead; !EndLine(UserInput + i); i++){
+		char sample = UserInput[i];
+		if(sample == '"')
+			SkipString(UserInput, userInputLen, &i);
+		if(sample >= 'A' && sample <= 'Z'
+		&& !insertbind(sourcefile, &i, bindings))
+			goto endonerror;
+	}
+	return (ptr_t) (NULL + 1);
+	/* tokenize */
+	{
+		nry_t tempnry = {0};
+		while(*readhead < userInputLen && !EndLine(UserInput + *readhead)){
+			SkipSpaces(UserInput, userInputLen, readhead);
+			/* getting the token */
+			char sample = UserInput[*readhead];
+			unsigned char symbol = whichsymbol(sample, operationPrimitiveSymbols);
+			int symbolpos = *readhead;
+			if(symbol == opsy_Page){
+				if(!inptonry(&tempnry, UserInput, readhead, globalType)){
+					error("\aInvalid character in page or number", *readhead, sourcefile);
+					goto endonerror;
+				} if(tempnry.len == (size_t) typelen[globalType])
+					symbol = opsy_Datum;
+			} else if(symbol == opsy_UNKNOWN){
+					char errorafd[] = "\aUnknown symbol ' '";
+					errorafd[17] = sample;
+					error(errorafd, *readhead, sourcefile);
+					goto endonerror;
+			}
+			/* making the token */
+			expr.tokens = realloc(expr.tokens, sizeof(token_t[1 + expr.len]));
+			expr.tokens[expr.len].op = symbol;
+			expr.tokens[expr.len].sourceposition = symbolpos;
+			expr.tokens[expr.len].whatop = Symbol;
+			expr.tokens[expr.len].kind.all = KIND_NOTHING;
+			expr.tokens[expr.len].val.chr = sample;
+			if(symbol == opsy_Page){
+				/* making it a page */
+				expr.tokens[expr.len].kind.all = KIND_KNOWN;
+				dummy = tempnry.fst.u8 - tempnry.base.u8;
+				memcpy(tempnry.base.u8 + tempnry.len, &tempnry.len, 2); // sizeof(uint16_t)
+				memcpy(tempnry.base.u8 + tempnry.len + 2, &dummy, 2);
+				expr.pages.pos = allocmemwy(&expr.pages, tempnry.base.p, tempnry.len + 4);
+				expr.tokens[expr.len].val.nry = data(&expr.pages);
+			} else if(symbol == opsy_Datum){
+				/* making it a datum */
+				expr.tokens[expr.len].kind.all = KIND_DATUM | KIND_KNOWN;
+				if(globalType < F32)
+					expr.tokens[expr.len].val.u64 = integer(tempnry.fst, globalType);
+				else if(globalType == F32)
+					expr.tokens[expr.len].val.f32 = *tempnry.fst.f32;
+				else if(globalType == F64)
+					expr.tokens[expr.len].val.f64 = *tempnry.fst.f64;
+			}
+			expr.len++; (*readhead)++;
+		}
+		freenry(&tempnry);
+		/* making the final token */
+		expr.tokens = realloc(expr.tokens, sizeof(token_t[1 + expr.len]));
+		expr.tokens[expr.len].op = 0;
+		expr.tokens[expr.len].sourceposition = 0;
+		expr.tokens[expr.len].whatop = Idea;
+		expr.tokens[expr.len].kind.all = KIND_NOTHING;
+	}
+	/* convert to ideas */
+	{
+	size_t i = 0;
+		for(i = 0; i < expr.len - 1; i++){
+			for(int rulenr = 0; rulenr < SymbolToIdeaAmount; rulenr++){
+				/* check rule */
+				if(	   expr.tokens[i].whatop   == SymbolToIdea[rulenr].conv[first]
+				    && expr.tokens[i+1].whatop == SymbolToIdea[rulenr].conv[second]
+				    && expr.tokens[i].op   == SymbolToIdea[rulenr].args[first]
+				    &&(expr.tokens[i+1].op == SymbolToIdea[rulenr].args[second]
+				    || SymbolToIdea[rulenr].args[second] == opsy_ANY)
+				){
+					/* apply rule */
+					expr.tokens[i].op = SymbolToIdea[rulenr].result[first];
+					expr.tokens[i].whatop = Idea;
+					if(SymbolToIdea[rulenr].result[second] == opid_DEL) {
+						if(i < expr.len - 2)
+							memmove(expr.tokens + i + 1, expr.tokens + i + 2, (expr.len - (i + 2))*sizeof(token_t));
+						expr.len--;
+					} else if(SymbolToIdea[rulenr].result[second] != opid_ANY){
+						expr.tokens[i+1].op = SymbolToIdea[rulenr].result[second];
+						expr.tokens[i+1].whatop = Idea;
+					}
+				}
+			}
+		}
+		/* check for unconverted symbols */
+		for(i = 0; i < expr.len; i++) if(expr.tokens[i].whatop != Symbol){
+			error("\aSymbol used in an invalid way", *readhead, sourcefile);
+			goto endonerror;
+		}
+	}
+
+	/* error checking? */
+	/* optimize */
+	/* compile */
+	/* end */
+	if(userInputLen != STANDARDuserInputLen){ UserInput = realloc(UserInput, STANDARDuserInputLen); userInputLen = STANDARDuserInputLen;};
+	/* checking regkinds still has to happen in the other function! */
+
+
+	free(expr.tokens);
+	clearmemwy(&expr.pages);
+	if(debugCompile){
+		printf("compiled better: '%s'\n", UserInput);
+	}
+	return (ptr_t) (NULL + 1);
+
+endonerror:
+	if(userInputLen != STANDARDuserInputLen){ UserInput = realloc(UserInput, STANDARDuserInputLen); userInputLen = STANDARDuserInputLen;};
+
+	free(expr.tokens);
+	clearmemwy(&expr.pages);
+	if(debugCompile){
+		printf("exiting better: '%s'\n", UserInput);
+	}
+	return (ptr_t) NULL;
+	/* checking regkinds still has to happen in the other function! */
+}
+
+
 ptr_t buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins){
+	if(debugCompile){
+		printf("about to compile: '%s'\n", UserInput);
+	}
 //	printf("buildargs\n");
 //	bool macrowas = false; // this is for debugCompile
 	ptr_t section = {malloc(2)};
@@ -680,9 +867,9 @@ ptr_t buildargs(int* readhead, file_t* sourcefile, memowy_t* bindings, char ins)
 	return (ptr_t) NULL;
 }
 
-bool compile(file_t* sourcefile, file_t* runfile, char* sourcename){
-	UserInput = malloc(userInputLen);
-	int readhead, ins, previns = 0;
+bool compile(file_t* source, file_t* runfile){
+//	UserInput = malloc(userInputLen);
+	int ins, previns = 0;
 	char inssection = 0;
 	ptr_t argsection = {NULL};
 	globalType = STANDARDtype;
@@ -690,34 +877,34 @@ bool compile(file_t* sourcefile, file_t* runfile, char* sourcename){
 	lbl_t labeling = {0, NULL, NULL, 0, NULL, NULL};
 	memowy_t bindings = {0, 0, 0, NULL};
 	memowy_t includes = {0, 0, 0, NULL};
-	allocmemwy(&includes, sourcename, strlen(sourcename) + 1);
+	allocmemwy(&includes, source->name, strlen(source->name) + 1);
 
 	compwhile:
-		readhead = 0; ins = -1;
+		source->strpos = 0; ins = -1;
 /*get input*/
-		if(mfgetsS(UserInput, userInputLen, sourcefile) == NULL)
+		if(mfgetsSu(source) == NULL)
 			goto endhealthy;
 //		printf("'%s'\n", UserInput);
 		figins:
 		inssection = 0;
-		SkipSpaces(UserInput, userInputLen, &readhead);
+		SkipSpaces(source->str, source->strlen, &(source->strpos));
 //		printf("%c, %d\n", UserInput[readhead], readhead);
 /*labels*/
-		if(UserInput[readhead] == ':'){
-			readhead++;
+		if(source->str[source->strpos] == ':'){
+			source->strpos++;
 			if(previns%2 == 0 && previns/2 >= Ce && previns/2 <= Cn){
-				error("\aLabel in a conditional statement", readhead-1, sourcefile);
+				error("\aLabel in a conditional statement", source->strpos - 1, source);
 				goto endonerror;
 			}
-			if(savelabel(runfile, UserInput, &readhead, &labeling, sourcefile) == NULL)
+			if(savelabel(runfile, source->str, &source->strpos, &labeling, source) == NULL)
 				goto endonerror;
 //			printf("label: %s, %s\n", UserInput, labeling.definedlabels[labeling.labelam-1]);
 //			printf("%c\n", UserInput[readhead]);
-			while(UserInput[readhead] != ',' && !EndLine(UserInput + readhead)) readhead++;
-			if(UserInput[readhead] == ','){
-				readhead++;
-				SkipSpaces(UserInput, userInputLen, &readhead);
-				ins = keywordlook(UserInput, 4, typeString, &readhead);
+			while(source->str[source->strpos] != ',' && !EndLine(source->str[source->strpos])) source->strpos++;
+			if(source->str[source->strpos] == ','){
+				source->strpos++;
+				SkipSpaces(source->str, source->strlen, &source->strpos);
+				ins = keywordlook(source->str, 4, typeString, &source->strpos);
 				if(ins == -1){
 					error("\aInvalid type", readhead, sourcefile);
 					goto endonerror;//end
@@ -775,6 +962,7 @@ bool compile(file_t* sourcefile, file_t* runfile, char* sourcename){
 		} else if(ins == ret)
 			goto compwhile;
 /*args*/
+		betterbuildargs(&readhead, sourcefile, &bindings);
 		argsection = buildargs(&readhead, sourcefile, &bindings, inssection/2);
 		if(argsection.chr == NULL) goto endonerror;//end
 		mfapp(runfile, argsection.p, *argsection.u16);
